@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Kilian Allaire — Rendering Specialist</title>
+<meta name="description" content="Rendering Specialist — Shaders, Post-process & GPU Optimization. Unreal Engine 5. Formerly Asobo Studio (Microsoft Flight Simulator)."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080810;--bg2:#0e0e1a;--bg3:#141422;
+  --line:rgba(255,255,255,0.06);
+  --text:#f0f0f8;--muted:#6b6b88;--dim:#3a3a52;
+  --accent:#c8ff00;
+  --accent-border:rgba(200,255,0,0.2);
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden}
+
+/* grid bg */
+.grid-bg{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:80px 80px;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black 0%,transparent 100%)}
+
+/* nav */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
+  padding:0 3rem;height:64px;background:rgba(8,8,16,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--line)}
+.nav-logo{font-size:14px;font-weight:700;color:var(--text);letter-spacing:0.05em;text-transform:uppercase;text-decoration:none}
+.nav-logo span{color:var(--accent)}
+.nav-links{display:flex;gap:2.5rem;list-style:none}
+.nav-links a{font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;letter-spacing:0.04em;text-transform:uppercase;transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.nav-cta{font-size:13px;font-weight:700;color:var(--bg);background:var(--accent);padding:8px 18px;text-decoration:none;letter-spacing:0.04em;text-transform:uppercase;transition:opacity .2s}
+.nav-cta:hover{opacity:.85}
+
+/* hero */
+#hero{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 3rem 5rem;position:relative;z-index:1}
+.hero-eyebrow{font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;margin-bottom:1.5rem;display:flex;align-items:center;gap:12px}
+.hero-eyebrow::before{content:'';display:block;width:40px;height:1px;background:var(--accent)}
+h1{font-size:clamp(3.2rem,8vw,7rem);font-weight:800;line-height:.95;letter-spacing:-.03em;margin-bottom:2rem;max-width:900px}
+h1 em{font-style:normal;color:transparent;-webkit-text-stroke:1px rgba(255,255,255,.22)}
+h1 .hl{color:var(--accent)}
+.hero-desc{font-size:1.05rem;color:var(--muted);max-width:480px;line-height:1.8;margin-bottom:3rem}
+.hero-row{display:flex;align-items:center;gap:2rem;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:700;color:var(--bg);background:var(--accent);padding:14px 28px;text-decoration:none;letter-spacing:.04em;text-transform:uppercase;transition:all .2s}
+.btn-primary:hover{opacity:.88;transform:translateY(-1px)}
+.btn-ghost{display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--muted);text-decoration:none;letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid var(--dim);padding-bottom:2px;transition:all .2s}
+.btn-ghost:hover{color:var(--text);border-color:var(--muted)}
+.hero-stats{display:flex;gap:3rem;margin-top:4rem;padding-top:2rem;border-top:1px solid var(--line)}
+.hstat-val{font-size:2rem;font-weight:800;color:var(--text);letter-spacing:-.03em;line-height:1;margin-bottom:4px}
+.hstat-val span{color:var(--accent)}
+.hstat-lbl{font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+
+/* sections */
+.section-wrap{position:relative;z-index:1;padding:7rem 3rem;border-top:1px solid var(--line);max-width:1100px;margin:0 auto}
+.section-tag{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;margin-bottom:1rem;display:flex;align-items:center;gap:10px}
+.section-tag::before{content:'//'}
+h2{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-bottom:1rem}
+.section-sub{color:var(--muted);max-width:500px;margin-bottom:4rem;line-height:1.8}
+
+/* expertise grid */
+.expertise-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.exp-card{background:var(--bg);padding:2.5rem 2rem;position:relative;overflow:hidden;transition:background .3s}
+.exp-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .3s}
+.exp-card:hover{background:var(--bg2)}
+.exp-card:hover::after{transform:scaleX(1)}
+.exp-num{font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-bottom:1.5rem;letter-spacing:.1em}
+.exp-title{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:.75rem;letter-spacing:-.01em}
+.exp-desc{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:1.5rem}
+.exp-tags{display:flex;flex-wrap:wrap;gap:6px}
+.etag{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:var(--bg3);border:1px solid var(--line);padding:3px 10px;letter-spacing:.04em}
+
+/* work list */
+.work-list{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)}
+.work-item{background:var(--bg);display:grid;grid-template-columns:80px 1fr auto;align-items:center;gap:2rem;padding:2rem 2.5rem;text-decoration:none;color:inherit;transition:background .2s;cursor:pointer}
+.work-item:hover{background:var(--bg2)}
+.work-index{font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.1em}
+.work-title{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:-.01em}
+.work-meta{font-size:13px;color:var(--muted)}
+.work-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.wtag{font-family:'DM Mono',monospace;font-size:11px;padding:2px 8px;letter-spacing:.04em;border:1px solid}
+.wtag-shader{color:#c8ff00;border-color:rgba(200,255,0,.25);background:rgba(200,255,0,.06)}
+.wtag-post{color:#4488ff;border-color:rgba(68,136,255,.25);background:rgba(68,136,255,.06)}
+.wtag-gpu{color:#ff8844;border-color:rgba(255,136,68,.25);background:rgba(255,136,68,.06)}
+.wtag-vfx{color:#cc44ff;border-color:rgba(204,68,255,.25);background:rgba(204,68,255,.06)}
+.work-arrow{font-size:1.2rem;color:var(--dim);transition:all .2s}
+.work-item:hover .work-arrow{color:var(--accent);transform:translate(4px,-4px)}
+.work-placeholder{background:var(--bg);padding:2rem 2.5rem;display:grid;grid-template-columns:80px 1fr;align-items:center;gap:2rem;opacity:.3}
+.ph-bar{height:12px;background:var(--bg3);margin-bottom:8px}
+
+/* timeline */
+.exp-timeline{display:flex;flex-direction:column;border:1px solid var(--line)}
+.tl-item{display:grid;grid-template-columns:200px 1fr;border-bottom:1px solid var(--line)}
+.tl-item:last-child{border-bottom:none}
+.tl-left{padding:2rem;border-right:1px solid var(--line)}
+.tl-right{padding:2rem 2.5rem}
+.tl-period{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:.08em;margin-bottom:6px}
+.tl-company{font-size:14px;font-weight:700;color:var(--text)}
+.tl-loc{font-size:12px;color:var(--muted);margin-top:4px}
+.tl-role{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:.5rem}
+.tl-desc{font-size:14px;color:var(--muted);line-height:1.7}
+.tl-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:1rem}
+.tbadge{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:var(--bg3);border:1px solid var(--line);padding:3px 10px}
+
+/* availability */
+#availability{position:relative;z-index:1;border-top:1px solid var(--line);padding:7rem 3rem;text-align:center}
+.avail-wrap{max-width:680px;margin:0 auto;border:1px solid var(--line);padding:4rem;position:relative}
+.avail-wrap::before{content:'';position:absolute;inset:-1px;border:1px solid transparent;
+  background:linear-gradient(135deg,var(--accent-border),transparent 50%) border-box;
+  -webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:destination-out;mask-composite:exclude;pointer-events:none}
+.avail-pulse{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:2rem}
+.avail-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 12px var(--accent)}50%{opacity:.4;box-shadow:none}}
+.avail-status{font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}
+.avail-title{font-size:2rem;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:1rem}
+.avail-desc{color:var(--muted);margin-bottom:2rem;font-size:1rem}
+.avail-email{display:block;font-family:'DM Mono',monospace;font-size:1rem;color:var(--accent);text-decoration:none;margin-bottom:2.5rem;transition:opacity .2s}
+.avail-email:hover{opacity:.7}
+.avail-links{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap}
+.alink{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;border:1px solid var(--line);padding:10px 20px;letter-spacing:.04em;text-transform:uppercase;transition:all .2s}
+.alink:hover{color:var(--text);border-color:var(--dim)}
+
+footer{position:relative;z-index:1;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:1.5rem 3rem;font-family:'DM Mono',monospace;font-size:12px;color:var(--dim);letter-spacing:.06em}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .7s,transform .7s}
+.reveal.visible{opacity:1;transform:none}
+
+@media(max-width:768px){
+  nav{padding:0 1.25rem}.nav-links{display:none}
+  #hero{padding:0 1.25rem 4rem}
+  .section-wrap{padding:5rem 1.25rem}
+  h1{font-size:2.8rem}
+  .expertise-grid{grid-template-columns:1fr}
+  .work-item{grid-template-columns:48px 1fr auto;padding:1.5rem 1.25rem;gap:1rem}
+  .tl-item{grid-template-columns:1fr}.tl-left{border-right:none}
+  footer{flex-direction:column;gap:8px;text-align:center;padding:1.5rem}
+  .hero-stats{gap:1.5rem;flex-wrap:wrap}
+  #availability{padding:5rem 1.25rem}
+  .avail-wrap{padding:2.5rem 1.5rem}
+}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<nav>
+  <a class="nav-logo" href="#hero">K<span>.</span>Allaire</a>
+  <ul class="nav-links">
+    <li><a href="#expertise">Expertise</a></li>
+    <li><a href="#work">Work</a></li>
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#availability">Hire me</a></li>
+  </ul>
+  <a class="nav-cta" href="mailto:allairekilian@gmail.com">Get in touch</a>
+</nav>
+
+<!-- HERO -->
+<div style="position:relative;z-index:1">
+<div id="hero">
+  <div class="hero-eyebrow">Available for freelance · Rendering Specialist</div>
+  <h1>Shaders.<br><em>Post-process.</em><br><span class="hl">GPU.</span></h1>
+  <p class="hero-desc">I make real-time rendering look extraordinary. Formerly engine programmer at Asobo Studio on Microsoft Flight Simulator. Now helping studios ship games that are as beautiful as they are performant.</p>
+  <div class="hero-row">
+    <a class="btn-primary" href="mailto:allairekilian@gmail.com">Start a project ↗</a>
+    <a class="btn-ghost" href="#work">View work →</a>
+  </div>
+  <div class="hero-stats">
+    <div><div class="hstat-val">3<span>y</span></div><div class="hstat-lbl">AAA experience</div></div>
+    <div><div class="hstat-val">UE<span>5</span></div><div class="hstat-lbl">Primary engine</div></div>
+    <div><div class="hstat-val">500<span>€</span></div><div class="hstat-lbl">Day rate</div></div>
+    <div><div class="hstat-val"><span>~</span>4w</div><div class="hstat-lbl">Lead time</div></div>
+  </div>
+</div>
+</div>
+
+<!-- EXPERTISE -->
+<div class="section-wrap" id="expertise">
+  <div class="reveal">
+    <div class="section-tag">Expertise</div>
+    <h2>What I do</h2>
+    <p class="section-sub">Specialized in the rendering pipeline — from the first shader pass to the final post-process stack.</p>
+  </div>
+  <div class="expertise-grid reveal">
+    <div class="exp-card">
+      <div class="exp-num">01</div>
+      <div class="exp-title">Custom Shaders</div>
+      <p class="exp-desc">HLSL/GLSL from scratch. Triplanar, stylized, PBR extensions, screen-space effects. Built for your art direction, not a template.</p>
+      <div class="exp-tags"><span class="etag">HLSL</span><span class="etag">GLSL</span><span class="etag">Material Editor</span><span class="etag">UE5</span></div>
+    </div>
+    <div class="exp-card">
+      <div class="exp-num">02</div>
+      <div class="exp-title">Post-process Stack</div>
+      <p class="exp-desc">Custom tonemapping, color grading, screen-space effects — built as a cohesive visual system, not isolated passes.</p>
+      <div class="exp-tags"><span class="etag">Post-process</span><span class="etag">Tonemapping</span><span class="etag">Color grading</span><span class="etag">UE5</span></div>
+    </div>
+    <div class="exp-card">
+      <div class="exp-num">03</div>
+      <div class="exp-title">GPU Optimization</div>
+      <p class="exp-desc">RenderDoc, Unreal Insights, GPU profiling. Finding the real bottleneck and fixing it — not just reducing draw calls blindly.</p>
+      <div class="exp-tags"><span class="etag">RenderDoc</span><span class="etag">UE Insights</span><span class="etag">Profiling</span><span class="etag">C++</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- WORK -->
+<div class="section-wrap" id="work">
+  <div class="reveal">
+    <div class="section-tag">Work</div>
+    <h2>Selected projects</h2>
+    <p class="section-sub">A selection of rendering work — replace placeholders with your real ArtStation links.</p>
+  </div>
+  <div class="work-list reveal">
+
+    <!-- ⚠️ REMPLACE : titre, meta, et ajoute href="https://artstation.com/..." sur .work-item -->
+    <div class="work-item">
+      <div class="work-index">001</div>
+      <div>
+        <div class="work-title">Ton shader le plus impressionnant</div>
+        <div class="work-meta">Unreal Engine 5 · HLSL · [contexte]</div>
+        <div class="work-tags"><span class="wtag wtag-shader">Shader</span><span class="wtag wtag-gpu">GPU opt.</span></div>
+      </div>
+      <div class="work-arrow">↗</div>
+    </div>
+
+    <div class="work-item">
+      <div class="work-index">002</div>
+      <div>
+        <div class="work-title">Ton meilleur post-process</div>
+        <div class="work-meta">Unreal Engine 5 · Post-process · [contexte]</div>
+        <div class="work-tags"><span class="wtag wtag-post">Post-process</span><span class="wtag wtag-shader">Shader</span></div>
+      </div>
+      <div class="work-arrow">↗</div>
+    </div>
+
+    <div class="work-item">
+      <div class="work-index">003</div>
+      <div>
+        <div class="work-title">VFX & Rendering — Asobo Studio</div>
+        <div class="work-meta">Microsoft Flight Simulator · Unreal Engine · 2023–2025</div>
+        <div class="work-tags"><span class="wtag wtag-shader">Shader</span><span class="wtag wtag-vfx">VFX</span><span class="wtag wtag-gpu">GPU opt.</span></div>
+      </div>
+      <div class="work-arrow">↗</div>
+    </div>
+
+    <div class="work-placeholder">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.1em">004</div>
+      <div><div class="ph-bar" style="width:220px"></div><div class="ph-bar" style="width:140px;opacity:.5"></div></div>
+    </div>
+  </div>
+  <p style="margin-top:1.5rem;font-family:'DM Mono',monospace;font-size:12px;color:var(--dim);letter-spacing:.06em">// Portfolio in active development — more coming soon</p>
+</div>
+
+<!-- EXPERIENCE -->
+<div class="section-wrap" id="experience">
+  <div class="reveal">
+    <div class="section-tag">Experience</div>
+    <h2>Background</h2>
+    <p class="section-sub">AAA shipped title, internship at a major publisher, 5 years of specialized game programming education.</p>
+  </div>
+  <div class="exp-timeline reveal">
+    <div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-period">2023 → 2025</div>
+        <div class="tl-company">Asobo Studio</div>
+        <div class="tl-loc">Bordeaux, France</div>
+      </div>
+      <div class="tl-right">
+        <div class="tl-role">Engine Programmer</div>
+        <p class="tl-desc">Rendering and engine programming on Microsoft Flight Simulator — one of the most visually demanding real-time applications in the world. Custom shaders, post-process systems, GPU optimization, and engine-level rendering features on a shipped AAA title.</p>
+        <div class="tl-badges"><span class="tbadge">C++</span><span class="tbadge">HLSL</span><span class="tbadge">Rendering pipeline</span><span class="tbadge">GPU profiling</span><span class="tbadge">Post-process</span></div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-period">2020</div>
+        <div class="tl-company">Ubisoft</div>
+        <div class="tl-loc">France</div>
+      </div>
+      <div class="tl-right">
+        <div class="tl-role">Technical Artist — Intern</div>
+        <p class="tl-desc">Technical art across production pipelines. Shader development, asset integration, and technical support bridging art and engineering teams.</p>
+        <div class="tl-badges"><span class="tbadge">Tech Art</span><span class="tbadge">Shaders</span><span class="tbadge">Pipeline</span></div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-period">2017 → 2022</div>
+        <div class="tl-company">Rubika</div>
+        <div class="tl-loc">Valenciennes, France</div>
+      </div>
+      <div class="tl-right">
+        <div class="tl-role">Game Programming — Master's (Bac+5)</div>
+        <p class="tl-desc">5-year specialized game programming curriculum. Built custom renderers in C (rasterizer, CUDA raytracer), OpenGL and DirectX11 engines from scratch — the same repos visible on GitHub today.</p>
+        <div class="tl-badges"><span class="tbadge">C / C++</span><span class="tbadge">OpenGL</span><span class="tbadge">DirectX11</span><span class="tbadge">CUDA</span><span class="tbadge">Raytracing</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AVAILABILITY -->
+<div id="availability">
+  <div class="avail-wrap reveal">
+    <div class="avail-pulse">
+      <div class="avail-dot"></div>
+      <div class="avail-status">Available for freelance</div>
+    </div>
+    <h2 class="avail-title">Let's make your<br>game look great.</h2>
+    <p class="avail-desc">Rendering specialist for indie and mid-size studios. Shaders, post-process, GPU optimization — Unreal Engine 5. Day rate from 500€.</p>
+    <a class="avail-email" href="mailto:allairekilian@gmail.com">allairekilian@gmail.com</a>
+    <div class="avail-links">
+      <a class="alink" href="https://www.linkedin.com/in/kilian-allaire" target="_blank">LinkedIn ↗</a>
+      <a class="alink" href="https://github.com/Kilian12345" target="_blank">GitHub ↗</a>
+      <a class="alink" href="#work">Work →</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>© 2026 Kilian Allaire</span>
+  <span>Rendering Specialist · Bordeaux, France</span>
+  <span>Built by hand</span>
+</footer>
+
+<script>
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}});
+},{threshold:0.08});
+document.querySelectorAll('.reveal').forEach(r=>obs.observe(r));
+</script>
+</body>
+</html>
