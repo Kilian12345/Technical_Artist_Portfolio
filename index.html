@@ -17,7 +17,9 @@
 <!-- Schema.org -->
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Person","name":"Kilian Allaire","jobTitle":"Technical Artist & Rendering Specialist","url":"https://kilianallaire.com","email":"allairekilian@gmail.com","address":{"@type":"PostalAddress","addressLocality":"Bordeaux","addressCountry":"FR"},"sameAs":["https://www.linkedin.com/in/kilian-allaire","https://github.com/Kilian12345"],"knowsAbout":["Technical Art","Rendering","HLSL","GPU Optimization","Unreal Engine","Unity","C++"]}
-</script> <!-- (LinkedIn, Facebook, Discord previews) -->
+</script>
+
+<!-- Open Graph -->
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://kilianallaire.com/"/>
 <meta property="og:title" content="Kilian Allaire — Technical Artist & Rendering Specialist"/>
@@ -29,6 +31,7 @@
 <meta name="twitter:title" content="Kilian Allaire — Technical Artist & Rendering Specialist"/>
 <meta name="twitter:description" content="Custom shaders, post-process & GPU optimization. Formerly Engine Programmer at Asobo Studio on Microsoft Flight Simulator."/>
 <meta name="twitter:image" content="https://kilianallaire.com/img/seo/seoThumbnail.jpg"/>
+
 <link rel="stylesheet" href="shared.css"/>
 <style>
 .wrap{max-width:1200px;margin:0 auto;padding:0 60px}
@@ -38,7 +41,7 @@
 .sec-title{font-family:var(--display);font-size:clamp(44px,5vw,72px);letter-spacing:.03em;line-height:.95;margin-bottom:48px}
 
 /* HERO */
-#hero{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+#hero{position:relative;z-index:1;min-height:85vh;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
 .hero-bg{position:absolute;inset:0;pointer-events:none}
 .hero-bg video{width:100%;height:100%;object-fit:cover;filter:brightness(.45) saturate(.7)}
 .hero-bg-ph{width:100%;height:100%;background:linear-gradient(160deg,#0c0c22 0%,#0a1018 40%,#180a18 100%)}
@@ -109,7 +112,7 @@
 .bf-val{font-size:12px;color:var(--text);font-weight:500}
 .bf-val.gold{color:var(--gold)}
 
-/* SKILLS — 4 colonnes égales côte à côte */
+/* SKILLS */
 .skills-inline{margin-top:48px;padding-top:40px;border-top:1px solid var(--line)}
 .skills-4col{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line)}
 .skb{margin-bottom:0;background:var(--dark);padding:20px 16px}
@@ -236,7 +239,7 @@
 <div id="cursor-ring"></div>
 
 <nav>
-  <a class="nav-logo" href="#hero">K.ALLAIRE<span>.</span></a>
+  <a class="nav-logo" href="#hero">Kilian Allaire<span>.</span></a>
   <ul class="nav-links">
     <li><a href="#work">Work</a></li>
     <li><a href="#experience">Experience</a></li>
@@ -250,7 +253,9 @@
 <!-- HERO -->
 <section id="hero">
   <div class="hero-bg">
-    <video id="hero-video" autoplay loop muted playsinline><source src="img/hero/videoPortfolio.mp4" type="video/mp4"/></video>
+    <video id="hero-video" autoplay loop muted playsinline poster="img/hero/heroPoster.png">
+      <source src="img/hero/heroVideo.mp4" type="video/mp4"/>
+    </video>
   </div>
   <div class="hero-content">
     <div class="hero-eyebrow"><div class="pulse"></div><span>Available for freelance</span><div class="eyebrow-line"></div><span>Bordeaux, France</span></div>
@@ -364,7 +369,7 @@
           <div class="exp-period">2024 — Present</div>
           <div class="exp-role">Founder & Game Developer</div>
           <div class="exp-company">KubiCorp · KUBIKA · Bordeaux</div>
-          <div class="exp-short">Building KUBIKA, a 3D puzzle game releasing in 2026, working within a team of five — VFX, post-process, shaders and optimization.</div>
+          <div class="exp-short">Building KUBIKA, a 3D puzzle game releasing in 2026, working within a team of five, VFX, post-process, shaders and optimization.</div>
         </div>
       </div>
 
@@ -394,7 +399,7 @@
           <div class="exp-period">2017 — 2022</div>
           <div class="exp-role">Game Programming — Master's (Bac+5)</div>
           <div class="exp-company">Rubika · Valenciennes</div>
-          <div class="exp-short">5-year master's degree in Game Programming, Technical Art and Graphics Programming.</div>
+          <div class="exp-short">5-year master's degree in Game Programming, learning about Technical Art and Graphics Programming on my free time.</div>
         </div>
       </div>
 
@@ -417,7 +422,7 @@
         <p class="bio-intro">I'm a rendering specialist who <strong>started writing shaders in 2017</strong> and never stopped.</p>
         <div class="bio-body">
           <p>After 5 years learning game development at Rubika, I spent 3 years at Asobo Studio as Engine Programmer on Microsoft Flight Simulator. Real production code, shipped to millions of players.</p>
-          <p>Today I work freelance helping indie and mid-size studios make their games look as good as they deserve — custom shaders, custom tools, post-process pipelines, GPU optimization. I have experience from GPU architecture to high-level shader production, which is why I can optimize what others can only guess at.</p>
+          <p>Today I work freelance helping indie and mid-size studios make their games look as good as they deserve, custom shaders, custom tools, post-process pipelines, GPU optimization. I have experience from GPU architecture to high-level shader production, which is why I can optimize what others can only guess at.</p>
           <p>I'm also currently building <strong style="color:var(--text)">KUBIKA</strong> through my studio KubiCorp (releasing in 2026), which means I understand indie constraints first-hand: budget, timeline, small team, everything.</p>
         </div>
         <div class="bio-facts">
@@ -494,12 +499,12 @@
         <div class="ct-body">
           <div class="ct-type">Interview · YouTube</div>
           <div class="ct-title">Engine Programming at Asobo Studio</div>
-          <div class="ct-desc">Behind the scenes of Microsoft Flight Simulator — rendering pipeline, technical challenges and life as an engine programmer at a AAA studio.</div>
+          <div class="ct-desc">Behind the scenes of Microsoft Flight Simulator, rendering pipeline, technical challenges and life as an engine programmer at a AAA studio.</div>
           <div class="ct-footer"><div class="ct-source">YouTube</div><div class="ct-arrow">↗</div></div>
         </div>
       </a>
 
-      <!-- ⚠️ Pour ajouter un nouveau contenu : copie le bloc <a class="ct-card"> ci-dessus -->
+      <!-- Pour ajouter un nouveau contenu : copie le bloc ct-card ci-dessus -->
 
     </div>
   </div>
@@ -562,8 +567,7 @@
       </div>
       <div class="ov-title">KUBIKA</div>
       <div class="ov-desc">
-        <p>3D puzzle game built from scratch at KubiCorp — responsible for the entire technical stack including engine programming, custom shaders, VFX, gameplay systems and the full technical art pipeline.</p>
-        <p>⚠️ Add specific technical details — what shaders you wrote, what visual problems you solved, what makes the rendering distinctive.</p>
+        <p>3D puzzle game built with Unity at KubiCorp, responsible for visual feedbacks, custom shaders, VFX, and optimization.</p>
       </div>
     </div>
   </div>
@@ -593,9 +597,8 @@
       </div>
       <div class="ov-title">Microsoft Flight Simulator 2024</div>
       <div class="ov-desc">
-        <p>3 years as Engine Programmer at Asobo Studio on one of the most visually ambitious real-time applications ever shipped — working on a custom in-house engine and delivering to millions of players worldwide across PC and Xbox.</p>
-        <p>Responsibilities covered custom shaders, post-process systems, GPU-level optimization and new rendering features. At this scale, every millisecond and every visual decision is measurable across the entire player base.</p>
-        <p>⚠️ Add what you can within NDA — which systems you owned, what visual problems you solved, what shipped.</p>
+        <p>3 years as Engine Programmer at Asobo Studio on one of the most visually ambitious real-time applications ever shipped, working on a custom in-house engine and delivering to millions of players worldwide across PC, Xbox and PS5.</p>
+        <p>Working on graphics features, custom artist tools, cross platform support and game optimization.</p>
       </div>
     </div>
   </div>
@@ -618,8 +621,8 @@
       </div>
       <div class="ov-title">CUDA Raytracer</div>
       <div class="ov-desc">
-        <p>Built from scratch to understand the fundamentals of raytracing — a technique becoming increasingly relevant in real-time rendering.</p>
-        <p>The initial CPU-only implementation was unusably slow: even with multithreading, a single frame took hours. Implementing CUDA moved the entire computation to the GPU, reducing render time from hours to seconds — the same principle behind modern hardware-accelerated renderers.</p>
+        <p>Built from scratch to understand the fundamentals of raytracing, a technique becoming increasingly relevant in real-time rendering.</p>
+        <p>The initial CPU-only implementation was unusably slow: even with multithreading, a single frame took hours. Implementing CUDA moved the entire computation to the GPU, reducing render time from hours to seconds, the same principle behind modern hardware-accelerated renderers.</p>
         <p>A foundational project for understanding GPU parallelism and light transport math at the implementation level.</p>
       </div>
     </div>
@@ -650,9 +653,8 @@
       </div>
       <div class="ov-title">CPU 3D Engine</div>
       <div class="ov-desc">
-        <p>After working with DirectX11, I wanted to understand what the graphics API was actually doing beneath the abstraction. The answer was to build a complete software rasterizer in C — no GPU, no API, just the CPU and math.</p>
-        <p>Implemented every step of the 3D rendering pipeline manually: vertex transformation, perspective projection, triangle rasterization, depth testing, texture mapping and basic lighting. Writing this by hand made GPU operations concrete rather than abstract.</p>
-        <p>This is the project that lets me profile and optimize at a level most tech artists can't — I know exactly what each draw call is doing at the hardware level.</p>
+        <p>After working with DirectX11, I wanted to understand what the graphics API was actually doing beneath the abstraction. The answer was to build a complete software rasterizer in C, no GPU, no API, just the CPU and math.</p>
+        <p>Implemented every step of the 3D rendering pipeline manually: vertex transformation, perspective projection, triangle rasterization, depth testing, texture mapping and basic lighting. Writing this by hand made graphics operations concrete rather than abstract.</p>
       </div>
     </div>
   </div>
@@ -682,8 +684,7 @@
       </div>
       <div class="ov-title">DirectX11 3D Engine</div>
       <div class="ov-desc">
-        <p>First introduction to a low-level graphics API — custom 3D rendering engine built in C++ using DirectX11. This was the entry point into GPU programming and the start of a series of renderer projects that each went deeper into the pipeline.</p>
-        <p>⚠️ Add what rendering features you implemented — shadow mapping, normal mapping, lighting model, what you learned from working directly with the API at this level.</p>
+        <p>First introduction to a low-level graphics API, custom 3D engine built in C++ using DirectX11. Built after OpenGL to understand how two different graphics APIs approach the same pipeline, and where they diverge at the driver and state management level.</p>
       </div>
     </div>
   </div>
@@ -713,8 +714,7 @@
       </div>
       <div class="ov-title">OpenGL 3D Engine</div>
       <div class="ov-desc">
-        <p>Custom 3D engine in C++ using OpenGL — built after DirectX11 to understand how two different graphics APIs approach the same pipeline, and where they diverge at the driver and state management level.</p>
-        <p>⚠️ Add what you specifically implemented and what the comparison with DirectX11 taught you technically.</p>
+        <p>First introduction to a low-level graphics API, custom 3D engine in C++ using OpenGL. This was the entry point into GPU programming and the start of a series of renderer projects that each went deeper into the pipeline.</p>
       </div>
     </div>
   </div>
@@ -744,8 +744,8 @@
       </div>
       <div class="ov-title">Unity Custom Scriptable Render Pipeline</div>
       <div class="ov-desc">
-        <p>Full Custom Scriptable Render Pipeline built from scratch in Unity — not a modification of the default pipeline, but a complete replacement written in C# and HLSL, replicating the visual identity of the music video LORN — ANVIL.</p>
-        <p>Working at the pipeline level meant implementing native rendering effects and stripping unnecessary overhead — exactly the approach used in production to build a specific visual identity while hitting performance targets. This project was a turning point: the render pipeline is not a black box, it is a programmable system you can shape to serve any visual goal.</p>
+        <p>Full Custom Scriptable Render Pipeline built from scratch in Unity, not a modification of the default pipeline, but a complete replacement written in C# and HLSL, replicating the visual identity of the music video LORN — ANVIL.</p>
+        <p>Working at the pipeline level meant implementing native rendering effects and stripping unnecessary overhead, exactly the approach used in production to build a specific visual identity while hitting performance targets. This project was a turning point: the render pipeline is not a black box, it is a programmable system you can shape to serve any visual goal.</p>
       </div>
     </div>
   </div>
@@ -772,6 +772,7 @@ if(heroVid){
     document.addEventListener('keydown',retry,{once:true});
   });
 }
+
 const cur=document.getElementById('cursor'),ring=document.getElementById('cursor-ring');
 let mx=0,my=0,rx=0,ry=0;
 document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});
