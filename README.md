@@ -1,4 +1,4 @@
-# kilianallaire.com — Portfolio Source
+# Kilian Allaire — Portfolio Source
 
 Personal portfolio website for **Kilian Allaire**, Technical Artist & Rendering Specialist.
 
