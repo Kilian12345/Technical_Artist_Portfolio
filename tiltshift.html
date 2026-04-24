@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Miniature Camera — Tilt Shift for Unity 6 URP | Kilian Allaire</title>
+<meta name="description" content="Miniature Camera is a depth-of-field post-processing tool for Unity 6 URP. Render Graph, Gaussian / Kawase / Dual Kawase blur engines, auto-focus, physical camera, time control. Full documentation, screenshots and API reference."/>
+<meta name="keywords" content="Unity Tilt Shift, Unity Depth of Field, Unity 6 URP, Render Graph, Kawase Blur, Dual Kawase, Post Processing, Unity Asset Store, Miniature Camera, Kilian Allaire"/>
+<meta name="author" content="Kilian Allaire"/>
+<meta name="robots" content="index, follow"/>
+<link rel="canonical" href="https://kilianallaire.com/tiltshift.html"/>
+<link rel="icon" type="image/png" href="img/favicon/favicon.png"/>
+<link rel="apple-touch-icon" href="img/favicon/favicon.png"/>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Miniature Camera - Tilt Shift","applicationCategory":"DeveloperApplication","operatingSystem":"Unity 6.3+ (6000.3.x)","softwareVersion":"1.0.0","author":{"@type":"Person","name":"Kilian Allaire","url":"https://kilianallaire.com"},"description":"Depth-of-field post-processing effect for Unity 6 Universal Render Pipeline, built on the Render Graph API."}
+</script>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://kilianallaire.com/tiltshift.html"/>
+<meta property="og:title" content="Miniature Camera — Tilt Shift for Unity 6 URP"/>
+<meta property="og:description" content="Depth-of-field post-processing for Unity 6 URP. Render Graph, 3 blur engines, auto-focus, time control. Full documentation and API reference."/>
+<meta property="og:image" content="https://kilianallaire.com/img/tiltshift/MiniatureTH_SocialMedia.webp"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Miniature Camera — Tilt Shift for Unity 6 URP"/>
+<meta name="twitter:description" content="Depth-of-field post-processing for Unity 6 URP. Full documentation and API reference."/>
+<meta name="twitter:image" content="https://kilianallaire.com/img/tiltshift/MiniatureTH_SocialMedia.webp"/>
+<link rel="stylesheet" href="shared.css"/>
+<style>
+.wrap{max-width:1200px;margin:0 auto;padding:0 60px}
+.sec-label{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:.16em;text-transform:uppercase;display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.sec-label::before{content:'';width:24px;height:1px;background:var(--gold)}
+
+/* HERO */
+.ts-hero{position:relative;padding:140px 0 80px;border-bottom:1px solid var(--line)}
+.ts-hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.ts-back{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:28px;display:inline-block}
+.ts-back a{color:var(--muted);text-decoration:none;transition:color .2s}
+.ts-back a:hover{color:var(--gold)}
+.ts-title{font-family:var(--display);font-size:clamp(42px,5.2vw,76px);letter-spacing:.03em;line-height:.95;margin:14px 0 14px}
+.ts-subtitle{font-size:16px;color:var(--text);font-weight:400;line-height:1.5;margin-bottom:18px;max-width:520px}
+.ts-desc{font-size:14px;color:var(--muted);line-height:1.85;font-weight:300;margin-bottom:28px;max-width:520px}
+.ts-desc strong{color:var(--text);font-weight:400}
+.ts-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:28px}
+.ts-ctas{display:flex;gap:14px;flex-wrap:wrap}
+.ts-hero-video{aspect-ratio:16/9;background:var(--dark3);border:1px solid var(--line);overflow:hidden;position:relative}
+.ts-hero-video video{width:100%;height:100%;object-fit:cover}
+.ts-hero-video .ts-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a1520,#0d3050);font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.vctrl{position:absolute;bottom:0;left:0;right:0;padding:10px 14px;background:linear-gradient(to top,rgba(3,3,10,.8),transparent);display:flex;align-items:center;gap:10px;opacity:0;transition:opacity .25s}
+.ts-hero-video:hover .vctrl{opacity:1}
+.vctrl input[type=range]{flex:1;height:3px;-webkit-appearance:none;appearance:none;background:rgba(255,255,255,.2);border-radius:2px;outline:none;cursor:none}
+.vctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--gold);cursor:none}
+.vctrl .tm{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.6);letter-spacing:.06em;white-space:nowrap}
+.vctrl button{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.6);background:none;border:none;cursor:none;padding:0;letter-spacing:.06em;transition:color .2s}
+.vctrl button:hover{color:var(--gold)}
+.yt-facade{position:relative;display:block;width:100%;height:100%;text-decoration:none;cursor:none;border:0}
+.yt-facade img{width:100%;height:100%;object-fit:cover;filter:brightness(.88);transition:filter .3s,transform .5s;display:block}
+.yt-facade:hover img{filter:brightness(1.05);transform:scale(1.02)}
+.yt-play-btn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:68px;height:68px;border-radius:50%;background:rgba(212,168,67,.92);color:var(--black);display:flex;align-items:center;justify-content:center;font-size:0;padding:0;border:none;transition:background .2s,transform .2s;cursor:none}
+.yt-play-btn::after{content:'';width:0;height:0;border-style:solid;border-width:12px 0 12px 20px;border-color:transparent transparent transparent var(--black);margin-left:4px}
+.yt-facade:hover .yt-play-btn{background:var(--gold2);transform:translate(-50%,-50%) scale(1.08)}
+.yt-badge{position:absolute;bottom:14px;left:14px;font-family:var(--mono);font-size:9px;color:#fff;letter-spacing:.14em;text-transform:uppercase;background:rgba(3,3,10,.7);padding:5px 9px;border:1px solid rgba(255,255,255,.15)}
+
+/* META STRIP */
+.ts-meta{padding:36px 0;border-bottom:1px solid var(--line);background:var(--dark)}
+.ts-meta-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.ts-meta-cell{background:var(--dark);padding:20px 22px;display:flex;flex-direction:column;gap:6px}
+.ts-meta-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+.ts-meta-val{font-size:14px;font-weight:500;color:var(--text)}
+.ts-meta-val.gold{color:var(--gold)}
+
+/* FEATURES */
+.ts-features{padding:80px 0;border-bottom:1px solid var(--line)}
+.ts-features-title{font-family:var(--display);font-size:clamp(36px,4vw,58px);letter-spacing:.03em;line-height:.95;margin-bottom:48px}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.feat-card{background:var(--dark);padding:28px 26px;display:flex;flex-direction:column;gap:10px;transition:background .25s;text-decoration:none;color:inherit;cursor:none;position:relative}
+.feat-card:hover{background:var(--dark2)}
+.feat-ico{font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase}
+.feat-name{font-size:15px;font-weight:500;color:var(--text);transition:color .2s}
+.feat-card:hover .feat-name{color:var(--gold2)}
+.feat-desc{font-size:12px;color:var(--muted);line-height:1.7;font-weight:300}
+.feat-arrow{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:8px;letter-spacing:.08em;transition:color .2s,transform .2s;display:flex;align-items:center;gap:8px}
+.feat-card:hover .feat-arrow{color:var(--gold)}
+.feat-arrow::before{content:'';width:16px;height:1px;background:currentColor;transition:width .2s}
+.feat-card:hover .feat-arrow::before{width:28px}
+
+/* GALLERY */
+.ts-gallery{padding:80px 0;border-bottom:1px solid var(--line)}
+.ts-gal-title{font-family:var(--display);font-size:clamp(36px,4vw,58px);letter-spacing:.03em;line-height:.95;margin-bottom:48px}
+.gal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.gal-item{aspect-ratio:16/9;background:var(--dark3);overflow:hidden;cursor:none;position:relative}
+.gal-item img{width:100%;height:100%;object-fit:cover;filter:brightness(.85);transition:filter .35s,transform .5s}
+.gal-item:hover img{filter:brightness(1.1);transform:scale(1.04)}
+.gal-item .gal-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.55);letter-spacing:.12em;text-transform:uppercase}
+.gal-item::after{content:'⊕';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;color:rgba(255,255,255,0);transition:color .25s;pointer-events:none}
+.gal-item:hover::after{color:rgba(255,255,255,.7)}
+
+/* DOCS */
+.ts-docs{padding:80px 0 120px;position:relative}
+.ts-docs-head{margin-bottom:40px}
+.ts-docs-title{font-family:var(--display);font-size:clamp(36px,4vw,58px);letter-spacing:.03em;line-height:.95;margin-bottom:12px}
+.ts-docs-sub{font-size:14px;color:var(--muted);max-width:600px;line-height:1.7;font-weight:300}
+.ts-docs-layout{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:56px;align-items:start}
+.ts-content{min-width:0}
+/* Right-aligned sticky sidebar */
+.ts-sidebar{position:sticky;top:88px;align-self:start;max-height:calc(100vh - 104px);overflow-y:auto;padding:16px 16px 16px 14px;background:var(--dark);border:1px solid var(--line);scrollbar-width:thin;scrollbar-color:var(--dim) transparent;z-index:2;text-align:right}
+.ts-sidebar::-webkit-scrollbar{width:3px}
+.ts-sidebar::-webkit-scrollbar-thumb{background:var(--dim)}
+.ts-search-wrap{margin-bottom:16px;position:relative}
+#doc-search{width:100%;font-family:var(--mono);font-size:11px;color:var(--text);background:var(--dark2);border:1px solid var(--line);padding:10px 12px 10px 32px;letter-spacing:.04em;outline:none;transition:border-color .2s;cursor:none;text-align:left}
+#doc-search::placeholder{color:var(--muted)}
+#doc-search:focus{border-color:var(--gold-bdr)}
+#doc-search::-webkit-search-decoration,#doc-search::-webkit-search-cancel-button,#doc-search::-webkit-search-results-button,#doc-search::-webkit-search-results-decoration{-webkit-appearance:none;display:none}
+#doc-search::-ms-clear,#doc-search::-ms-reveal{display:none;width:0;height:0}
+.ts-search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:11px;color:var(--muted);pointer-events:none}
+.ts-search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:none;padding:4px 6px;letter-spacing:.08em;opacity:0;transition:opacity .2s,color .2s}
+.ts-search-clear.visible{opacity:1}
+.ts-search-clear:hover{color:var(--gold)}
+.ts-search-count{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em;margin-top:6px;padding-left:4px;display:none}
+.ts-search-count.visible{display:block}
+.doc-section mark.sh{background:rgba(212,168,67,.22);color:var(--gold2);padding:0 2px;border-bottom:1px solid var(--gold-bdr);border-radius:1px}
+.ts-toc-label{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;padding:0 0 8px;border-bottom:1px solid var(--line);margin-bottom:6px;text-align:right}
+.ts-toc{position:static;top:auto;left:auto;right:auto;z-index:auto;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;padding:0;height:auto;background:transparent;backdrop-filter:none;border-bottom:none}
+.ts-toc a{display:block;padding:5px 10px 5px 10px;font-family:var(--mono);font-size:10.5px;color:var(--muted);text-decoration:none;letter-spacing:.04em;border-right:2px solid transparent;transition:color .15s,border-color .15s;cursor:none;line-height:1.45;text-align:right}
+.ts-toc a:hover{color:var(--text);border-right-color:var(--line2)}
+.ts-toc a.active{color:var(--gold);border-right-color:var(--gold)}
+.ts-toc a.hidden{display:none}
+.ts-toc a.sub{padding-right:22px;font-size:10px;color:var(--dim)}
+.ts-toc a.sub:hover{color:var(--muted)}
+.ts-toc a.sub.active{color:var(--gold)}
+
+.ts-content{min-width:0}
+.doc-section{padding:24px 0 44px;border-bottom:1px solid var(--line);scroll-margin-top:90px}
+.doc-section:last-child{border-bottom:none}
+.doc-section.hidden{display:none}
+.doc-section h2{font-family:var(--display);font-size:clamp(28px,3vw,42px);letter-spacing:.02em;line-height:1;margin-bottom:18px;color:var(--text)}
+.doc-section h3{font-family:var(--display);font-size:22px;letter-spacing:.03em;margin:32px 0 14px;color:var(--gold2)}
+.doc-section h4{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:24px 0 10px}
+.doc-section p{font-size:14px;color:var(--muted);line-height:1.85;font-weight:300;margin-bottom:14px;max-width:820px}
+.doc-section p strong{color:var(--text);font-weight:500}
+.doc-section ul,.doc-section ol{font-size:14px;color:var(--muted);line-height:1.85;font-weight:300;margin:0 0 14px 22px;max-width:820px}
+.doc-section li{margin-bottom:6px}
+.doc-section a{color:var(--gold);text-decoration:none;border-bottom:1px solid var(--gold-bdr);transition:color .2s,border-color .2s}
+.doc-section a:hover{color:var(--gold2);border-bottom-color:var(--gold)}
+.doc-section code{font-family:var(--mono);font-size:12px;color:var(--gold2);background:var(--dark2);padding:1px 6px;border:1px solid var(--line);letter-spacing:.02em}
+.doc-section pre{font-family:var(--mono);font-size:12px;color:var(--text);background:var(--dark2);border:1px solid var(--line);padding:18px 20px;overflow-x:auto;margin:14px 0 20px;line-height:1.65;max-width:100%}
+.doc-section pre code{background:none;border:none;padding:0;color:inherit}
+.doc-section table{width:100%;max-width:100%;border-collapse:collapse;margin:14px 0 24px;font-size:13px;border:1px solid var(--line)}
+.doc-section table th,.doc-section table td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);border-right:1px solid var(--line);vertical-align:top}
+.doc-section table th:last-child,.doc-section table td:last-child{border-right:none}
+.doc-section table tr:last-child td{border-bottom:none}
+.doc-section table th{font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;background:var(--dark);font-weight:500}
+.doc-section table td{color:var(--muted);font-weight:300;line-height:1.6}
+.doc-section table td code{font-size:11px;color:var(--text);background:var(--dark3)}
+.doc-section table td:last-child code{color:var(--gold2)}
+
+/* INLINE DOC SCREENSHOTS */
+.doc-img{margin:18px 0 28px;max-width:820px}
+.doc-img-wrap{aspect-ratio:16/9;background:var(--dark3);border:1px solid var(--line);overflow:hidden;position:relative;cursor:none}
+.doc-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.92);transition:filter .3s,transform .5s}
+.doc-img-wrap:hover img{filter:brightness(1.08);transform:scale(1.02)}
+.doc-img-wrap .doc-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-family:var(--mono);font-size:10px;color:rgba(236,236,244,.55);letter-spacing:.14em;text-transform:uppercase;background:linear-gradient(135deg,#0a1520,#0d3050);pointer-events:none}
+.doc-img-wrap .doc-ph::before{content:'';width:28px;height:1px;background:var(--gold-bdr)}
+.doc-img-wrap::after{content:'⊕';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;color:rgba(255,255,255,0);transition:color .25s;pointer-events:none}
+.doc-img-wrap:hover::after{color:rgba(255,255,255,.7)}
+.doc-img figcaption{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.08em;margin-top:10px;line-height:1.6}
+.doc-section blockquote{border-left:2px solid var(--gold);background:var(--gold-dim);padding:14px 20px;margin:14px 0 20px;font-size:13px;color:var(--text);line-height:1.7;max-width:820px}
+.doc-section blockquote strong{color:var(--gold2)}
+
+/* BACK TO TOP */
+.back-top{position:fixed;bottom:28px;right:28px;z-index:90;width:46px;height:46px;border:1px solid var(--line2);background:rgba(8,8,15,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;color:var(--muted);letter-spacing:.06em;cursor:none;opacity:0;pointer-events:none;transition:all .25s}
+.back-top.visible{opacity:1;pointer-events:all}
+.back-top:hover{color:var(--gold);border-color:var(--gold-bdr);background:rgba(8,8,15,.95)}
+
+#lightbox{position:fixed;inset:0;z-index:2000;background:rgba(3,3,10,.95);display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .3s}
+#lightbox.open{pointer-events:all;opacity:1}
+.lb-media{max-width:90vw;max-height:85vh;object-fit:contain;display:block}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:11px;color:var(--muted);background:rgba(8,8,15,.7);border:1px solid var(--line);padding:14px 18px;cursor:none;transition:all .2s;letter-spacing:.1em;text-transform:uppercase;user-select:none}
+.lb-nav:hover{color:var(--gold);border-color:var(--gold-bdr)}
+#lb-prev{left:24px}
+#lb-next{right:24px}
+.lb-close{position:absolute;top:20px;right:20px;font-family:var(--mono);font-size:10px;color:var(--muted);background:rgba(8,8,15,.7);border:1px solid var(--line);padding:8px 14px;cursor:none;transition:all .2s;letter-spacing:.1em;text-transform:uppercase}
+.lb-close:hover{color:var(--text);border-color:var(--line2)}
+.lb-counter{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em}
+
+@media(max-width:1100px){
+  .ts-docs-layout{grid-template-columns:minmax(0,1fr) 200px;gap:36px}
+  .ts-hero-grid{grid-template-columns:1fr;gap:40px}
+  .ts-meta-grid{grid-template-columns:repeat(3,1fr)}
+  .feat-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:900px){
+  .wrap{padding:0 24px}
+  .ts-hero{padding:110px 0 60px}
+  .ts-docs-layout{grid-template-columns:1fr;gap:20px}
+  .ts-sidebar{position:relative;top:0;max-height:none;padding:14px 16px;order:-1}
+  .ts-sidebar,.ts-toc,.ts-toc-label,.ts-toc a{text-align:left}
+  .ts-toc a{border-right:none;border-left:2px solid transparent}
+  .ts-toc a:hover{border-left-color:var(--line2)}
+  .ts-toc a.active{border-left-color:var(--gold)}
+  .ts-toc a.sub{padding-left:22px;padding-right:10px}
+  .gal-grid{grid-template-columns:repeat(2,1fr)}
+  .feat-grid{grid-template-columns:1fr}
+  .ts-meta-grid{grid-template-columns:repeat(2,1fr)}
+  .doc-section pre{font-size:11px;padding:14px}
+  .doc-section table{font-size:12px}
+  .doc-section table th,.doc-section table td{padding:8px 10px}
+}
+@media(max-width:560px){
+  .gal-grid{grid-template-columns:1fr}
+  .ts-meta-grid{grid-template-columns:1fr}
+  .lb-nav{padding:10px 12px;font-size:10px}
+  #lb-prev{left:8px}#lb-next{right:8px}
+}
+</style>
+</head>
+<body>
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+<nav>
+  <a class="nav-logo" href="index.html">Kilian Allaire<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html#work">Work</a></li>
+    <li><a href="index.html#experience">Experience</a></li>
+    <li><a href="index.html#about">About</a></li>
+    <li><a href="index.html#content">Content</a></li>
+    <li><a href="index.html#contact">Contact</a></li>
+  </ul>
+  <a class="nav-hire" href="index.html#work">&larr; Back to portfolio</a>
+</nav>
+
+<section class="ts-hero">
+  <div class="wrap">
+    <div class="ts-back"><a href="index.html#work">&larr; All projects</a></div>
+    <div class="ts-hero-grid">
+      <div class="reveal">
+        <div class="sec-label">Unity Tool &middot; 2026 &middot; v1.0.0</div>
+        <h1 class="ts-title">MINIATURE CAMERA<br>&mdash; TILT SHIFT</h1>
+        <div class="ts-subtitle">Depth-of-field post-processing effect for Unity 6 URP, built entirely on the Render Graph API.</div>
+        <div class="ts-desc">Two visual modes (depth-based 3D DoF and screen-space linear gradient), three blur engines, auto-focus raycast, physical camera simulation, and integrated <strong>time control</strong> for miniature / stop-motion looks. Everything configurable from the inspector, the Scene View overlay, or at runtime through the scripting API.</div>
+        <div class="ts-tags">
+          <span class="wtag wtag-e">Unity</span>
+          <span class="wtag wtag-g">Tool</span>
+          <span class="wtag wtag-p">C#</span>
+          <span class="wtag wtag-s">HLSL</span>
+          <span class="wtag wtag-v">URP</span>
+          <span class="wtag wtag-e">Render Graph</span>
+        </div>
+        <div class="ts-ctas">
+          <a class="btn-gold" href="https://assetstore.unity.com/" target="_blank" rel="noopener">View on Asset Store &rarr;</a>
+          <a class="btn-outline" href="#documentation">Read the docs</a>
+        </div>
+      </div>
+      <div class="reveal d1">
+        <div class="ts-hero-video" id="ts-hero-video">
+          <a class="yt-facade" id="yt-facade" href="https://www.youtube.com/watch?v=Enidtotl6sE" data-yt-id="Enidtotl6sE" target="_blank" rel="noopener" aria-label="Play Miniature Camera demo on YouTube">
+            <img src="https://img.youtube.com/vi/Enidtotl6sE/maxresdefault.jpg" alt="Miniature Camera demo" loading="lazy" onerror="this.src='img/tiltshift/MiniatureScreenShot_Hero.webp'"/>
+            <span class="yt-play-btn" aria-hidden="true"></span>
+            <span class="yt-badge">YouTube</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="ts-meta">
+  <div class="wrap">
+    <div class="ts-meta-grid">
+      <div class="ts-meta-cell"><span class="ts-meta-lbl">Engine</span><span class="ts-meta-val">Unity 6.3+ (6000.3.x)</span></div>
+      <div class="ts-meta-cell"><span class="ts-meta-lbl">Pipeline</span><span class="ts-meta-val">Universal RP 17.x</span></div>
+      <div class="ts-meta-cell"><span class="ts-meta-lbl">API</span><span class="ts-meta-val">Render Graph</span></div>
+      <div class="ts-meta-cell"><span class="ts-meta-lbl">Platforms</span><span class="ts-meta-val">All URP targets</span></div>
+      <div class="ts-meta-cell"><span class="ts-meta-lbl">Version</span><span class="ts-meta-val gold">1.0.0</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="ts-features">
+  <div class="wrap">
+    <div class="sec-label">What's inside</div>
+    <h2 class="ts-features-title">FEATURE OVERVIEW</h2>
+    <div class="feat-grid">
+      <a class="feat-card" href="#enumerations"><div class="feat-ico">01 / Modes</div><div class="feat-name">Depth Based &amp; Linear Gradient</div><div class="feat-desc">3D depth-of-field driven by the depth buffer, or screen-space tilt-shift band with rotation and softness.</div><div class="feat-arrow">Read more</div></a>
+      <a class="feat-card" href="#performance"><div class="feat-ico">02 / Engines</div><div class="feat-name">3 Blur Algorithms</div><div class="feat-desc">Separable Gaussian, Kawase, and Dual Kawase. Pick the tradeoff between quality and GPU cost per platform.</div><div class="feat-arrow">Read more</div></a>
+      <a class="feat-card" href="#enumerations"><div class="feat-ico">03 / Quality</div><div class="feat-name">4 Quality Tiers</div><div class="feat-desc">Low / Medium / High / Ultra compiled as shader_feature_local variants. Zero runtime branching.</div><div class="feat-arrow">Read more</div></a>
+      <a class="feat-card" href="#settings"><div class="feat-ico">04 / Auto Focus</div><div class="feat-name">Center-screen Raycast</div><div class="feat-desc">Dynamic focus driven by a Physics.Raycast from the viewport center, with exponential smoothing.</div><div class="feat-arrow">Read more</div></a>
+      <a class="feat-card" href="#settings"><div class="feat-ico">05 / Physical</div><div class="feat-name">Real Camera Math</div><div class="feat-desc">Circle of Confusion formula using f-stop, focal length, and sensor height for accurate bokeh.</div><div class="feat-arrow">Read more</div></a>
+      <a class="feat-card" href="#enumerations"><div class="feat-ico">06 / Bokeh</div><div class="feat-name">Circle &amp; Hexagonal</div><div class="feat-desc">8-direction circular sampling or 6-direction hexagonal shape, Gaussian engine only.</div><div class="feat-arrow">Read more</div></a>
+      <a class="feat-card" href="#time-control"><div class="feat-ico">07 / Time Control</div><div class="feat-name">Game Speed + Frame Skip</div><div class="feat-desc">Independent Renderer Feature unifying Time.timeScale and simulated frame rate (4&ndash;30 fps) for miniature looks.</div><div class="feat-arrow">Read more</div></a>
+      <a class="feat-card" href="#preset-system"><div class="feat-ico">08 / Presets</div><div class="feat-name">ScriptableObject Snapshots</div><div class="feat-desc">5 built-in presets (Default, Portrait, Landscape, Miniature, Cinematic). Save and apply from code or inspector.</div><div class="feat-arrow">Read more</div></a>
+      <a class="feat-card" href="#troubleshooting"><div class="feat-ico">09 / Debug</div><div class="feat-name">Full Visualization</div><div class="feat-desc">Focus zone overlay, raycast debug in Scene View, profiler markers via ProfilingSampler.</div><div class="feat-arrow">Read more</div></a>
+    </div>
+  </div>
+</section>
+
+<section class="ts-gallery">
+  <div class="wrap">
+    <div class="sec-label">Gallery</div>
+    <h2 class="ts-gal-title">SCREENSHOTS</h2>
+    <div class="gal-grid">
+      <div class="gal-item" data-media="img/tiltshift/MiniatureScreenShot_FinalLook.webp"><img src="img/tiltshift/MiniatureScreenShot_FinalLook.webp" alt="Miniature Camera final depth-of-field result" loading="lazy"/><div class="gal-ph">FINAL LOOK</div></div>
+      <div class="gal-item" data-media="img/tiltshift/MiniatureScreenShot_Hero.webp"><img src="img/tiltshift/MiniatureScreenShot_Hero.webp" alt="Miniature scene showcase with tilt-shift effect" loading="lazy"/><div class="gal-ph">MINIATURE SCENE</div></div>
+      <div class="gal-item" data-media="img/tiltshift/MiniatureScreenShot_BlurMode.webp"><img src="img/tiltshift/MiniatureScreenShot_BlurMode.webp" alt="Depth Based vs Linear Gradient blur mode comparison" loading="lazy"/><div class="gal-ph">BLUR MODES</div></div>
+      <div class="gal-item" data-media="img/tiltshift/MiniatureScreenShot_BlurEngines.webp"><img src="img/tiltshift/MiniatureScreenShot_BlurEngines.webp" alt="Gaussian, Kawase and Dual Kawase engine comparison" loading="lazy"/><div class="gal-ph">BLUR ENGINES</div></div>
+      <div class="gal-item" data-media="img/tiltshift/MiniatureScreenShot_DebugVisuals.webp"><img src="img/tiltshift/MiniatureScreenShot_DebugVisuals.webp" alt="Debug visualization showing focus zone color overlay" loading="lazy"/><div class="gal-ph">DEBUG VISUALS</div></div>
+      <div class="gal-item" data-media="img/tiltshift/MiniatureScreenShot_EditorOVerlayAndDebug.webp"><img src="img/tiltshift/MiniatureScreenShot_EditorOVerlayAndDebug.webp" alt="Scene View overlay and debug panel in Unity editor" loading="lazy"/><div class="gal-ph">SCENE VIEW OVERLAY</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="ts-docs" id="documentation">
+  <div class="wrap">
+    <div class="ts-docs-head">
+      <div class="sec-label">Reference</div>
+      <h2 class="ts-docs-title">DOCUMENTATION</h2>
+      <div class="ts-docs-sub">Full API and technical reference. Use the search on the right to jump directly to a feature, method, enum, or setting. Same content as the in-package <code style="font-family:var(--mono);color:var(--gold2)">DOCUMENTATION.md</code>, kept in sync with every release.</div>
+    </div>
+    <div class="ts-docs-layout">
+      <main class="ts-content" id="ts-content">
+
+<div class="doc-section" data-id="overview">
+<h2>Overview</h2>
+<p><strong>Miniature Camera</strong> is a depth-of-field post-processing effect for Unity 6 URP, built entirely on the Render Graph API. It supports two visual modes (depth-based 3D DoF and screen-space linear gradient), three blur algorithms, auto-focus via screen-center raycast, game speed control, and frame-rate simulation for miniature / stop-motion looks.</p>
+<p>Everything is configurable from the inspector, the Scene View overlay, or at runtime through a clean scripting API.</p>
+<h3>Features</h3>
+<table>
+<thead><tr><th>Feature</th><th>Details</th></tr></thead>
+<tbody>
+<tr><td>Blur Modes</td><td>Depth-Based (3D DoF), Linear Gradient (photo tilt-shift)</td></tr>
+<tr><td>Blur Engines</td><td>Gaussian, Kawase, Dual Kawase</td></tr>
+<tr><td>Blur Quality</td><td>Low, Medium, High, Ultra</td></tr>
+<tr><td>Bokeh Shapes</td><td>Disabled, Circle (8-dir), Hexagonal (6-dir)</td></tr>
+<tr><td>Depth Calculation</td><td>Absolute, Relative, Camera Relative, Auto (raycast)</td></tr>
+<tr><td>Transition Curves</td><td>Linear, Smooth, Quadratic, Cubic</td></tr>
+<tr><td>Physical Camera</td><td>Circle of Confusion formula (f-stop, focal length, sensor height)</td></tr>
+<tr><td>Depth Protection</td><td>Bilateral rejection to prevent color bleeding at depth edges</td></tr>
+<tr><td>Render Scale</td><td>Full, Half, Quarter resolution blur pass</td></tr>
+<tr><td>Time Control</td><td>Game speed (<code>Time.timeScale</code>) + frame-rate simulation in a single feature</td></tr>
+<tr><td>Presets</td><td>ScriptableObject assets, saveable and loadable from inspector or code</td></tr>
+<tr><td>Scripting API</td><td>Full runtime control over focus, blur, mode, quality, and physical camera</td></tr>
+<tr><td>Debug Mode</td><td>Color overlay that visualizes focus zones</td></tr>
+<tr><td>Scene View</td><td>Optional effect preview in the Scene View camera</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="doc-section" data-id="requirements">
+<h2>Requirements</h2>
+<table>
+<thead><tr><th>Dependency</th><th>Minimum Version</th></tr></thead>
+<tbody>
+<tr><td>Unity</td><td><strong>6.3</strong> (6000.3.x) or higher</td></tr>
+<tr><td>Universal RP</td><td><strong>17.x</strong> (bundled with Unity 6)</td></tr>
+<tr><td>Render Graph</td><td>Enabled (default in Unity 6 URP)</td></tr>
+<tr><td>Depth Texture</td><td>Enabled in URP Renderer settings</td></tr>
+<tr><td>Shader Model</td><td>SM 3.5</td></tr>
+<tr><td>Platform</td><td>All platforms supported by URP</td></tr>
+</tbody>
+</table>
+<p>The Render Graph API (<code>RecordRenderGraph</code>) is required. This package does not support the legacy <code>Execute()</code> path or Unity 2021 / 2022 LTS. Tested on Unity <strong>6.3</strong>, <strong>6.4</strong>, and <strong>6.5</strong>.</p>
+<p><strong>Depth Texture</strong> must be enabled on your URP Renderer asset: select the Renderer, then under <strong>Rendering</strong>, check <strong>Depth Texture</strong>. Without it, the depth buffer is unavailable and the Depth Based blur mode cannot compute focus zones.</p>
+</div>
+
+<div class="doc-section" data-id="installation">
+<h2>Installation</h2>
+<h3>Via Unity Package Manager</h3>
+<ol>
+<li>Open <strong>Window &gt; Package Manager</strong></li>
+<li>Click <strong>+</strong> then <strong>Add package from disk...</strong></li>
+<li>Navigate to <code>TiltShift/package.json</code></li>
+<li>Click <strong>Open</strong></li>
+</ol>
+<h3>Manual</h3>
+<p>Copy the <code>Assets/TiltShift</code> folder into your project's Assets directory.</p>
+<h3>Setup after install</h3>
+<ol>
+<li>Select your URP Renderer asset (usually in <code>Settings/</code>)</li>
+<li>Under <strong>Rendering</strong>, ensure <strong>Depth Texture</strong> is enabled</li>
+<li>Click <strong>Add Renderer Feature</strong></li>
+<li>Select <strong>Miniature Camera Render Feature</strong></li>
+<li>Assign the <code>M_TiltShift</code> material from <code>TiltShift/Runtime/Shaders/</code></li>
+<li>Optionally add <strong>Miniature Camera Time Control Feature</strong> below it for game speed and frame skip</li>
+</ol>
+</div>
+
+<div class="doc-section" data-id="quick-start">
+<h2>Quick Start</h2>
+<h3>Minimal setup</h3>
+<pre><code>URP Renderer asset
+  Renderer Features
+    Miniature Camera Render Feature         &lt;- add this
+    Miniature Camera Time Control Feature   &lt;- optional (game speed + frame skip)</code></pre>
+<p><strong>Step 1</strong> &mdash; Add the feature via the URP Renderer inspector.</p>
+<p><strong>Step 2</strong> &mdash; Assign the material: <code>Assets/TiltShift/Runtime/Shaders/M_TiltShift.mat</code></p>
+<p><strong>Step 3</strong> &mdash; Play. Use the inspector sliders to configure the effect.</p>
+<h3>Scripting Quick Start</h3>
+<pre><code>using TiltShift;
+using UnityEngine;
+using UnityEngine.Rendering.Universal;
+
+public class DoFController : MonoBehaviour
+{
+    private TiltShiftRenderFeature feature;
+
+    void Start()
+    {
+        feature = GetTiltShiftFeature();
+    }
+
+    void Update()
+    {
+        float dist = Vector3.Distance(Camera.main.transform.position, target.position);
+        feature.SetFocusCenter(dist);
+    }
+
+    private TiltShiftRenderFeature GetTiltShiftFeature()
+    {
+        var urpAsset = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline
+            as UniversalRenderPipelineAsset;
+
+        var field = typeof(UniversalRenderPipelineAsset)
+            .GetField("m_RendererDataList",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        var list = field?.GetValue(urpAsset) as ScriptableRendererData[];
+
+        foreach (var data in list)
+            foreach (var feat in data.rendererFeatures)
+                if (feat is TiltShiftRenderFeature ts) return ts;
+
+        return null;
+    }
+}</code></pre>
+</div>
+
+<div class="doc-section" data-id="architecture">
+<h2>Architecture</h2>
+<pre><code>URP Renderer Asset
+  Renderer Features
+    TiltShiftRenderFeature       inspector + scripting API
+      TiltShiftSettings          serialized parameters
+      TiltShiftPass (internal)   render graph recording
+    TiltShiftTimeControlFeature  game speed + frame-rate simulation
+
+    TiltShiftPreset              ScriptableObject assets (.asset files)</code></pre>
+<h3>Frame execution order per camera</h3>
+<ol>
+<li>URP renders the scene normally</li>
+<li><code>TiltShiftPass.RecordRenderGraph()</code> adds blur passes to the graph</li>
+<li>URP executes the graph &mdash; the blur result replaces <code>activeColorTexture</code></li>
+<li><code>TiltShiftTimeControlFeature</code> optionally replaces the frame with a cached one (frame skip)</li>
+<li>URP presents the final image</li>
+</ol>
+</div>
+
+<div class="doc-section" data-id="render-feature">
+<h2>TiltShiftRenderFeature</h2>
+<p><strong>Namespace:</strong> <code>TiltShift</code> &middot; <strong>Inherits:</strong> <code>ScriptableRendererFeature</code> &middot; <strong>File:</strong> <code>Runtime/TiltShiftRenderFeature.cs</code></p>
+<p>The main entry point. Add this to your URP Renderer asset. It owns all effect settings and exposes the scripting API.</p>
+<figure class="doc-img">
+  <div class="doc-img-wrap" data-media="img/tiltshift/MiniatureScreenShot_EditorOVerlayAndDebug.webp">
+    <img src="img/tiltshift/MiniatureScreenShot_EditorOVerlayAndDebug.webp" alt="Tilt Shift custom inspector with collapsible sections" loading="lazy"/>
+    <div class="doc-ph">Custom Inspector &middot; Mode / Focus / Blur / Debug</div>
+  </div>
+  <figcaption>The custom inspector exposes every setting with collapsible sections, live sliders, and automatic clamping.</figcaption>
+</figure>
+<h3>Properties</h3>
+<table>
+<thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>settings</code></td><td><code>TiltShiftSettings</code></td><td>All effect parameters, serialized to the Renderer asset.</td></tr>
+</tbody>
+</table>
+<h3>Lifecycle</h3>
+<table>
+<thead><tr><th>Method</th><th>When Called</th><th>What it Does</th></tr></thead>
+<tbody>
+<tr><td><code>Create()</code></td><td>On asset load, domain reload</td><td>Instantiates <code>TiltShiftPass</code>. Skipped if no material assigned.</td></tr>
+<tr><td><code>AddRenderPasses()</code></td><td>Every frame, every camera</td><td>Enqueues the pass. Skips if material is null. In Auto Focus mode, also computes the center-screen raycast (game camera only, once per frame via <code>Time.frameCount</code> guard) and updates <code>autoFocusCurrentDistance</code>.</td></tr>
+<tr><td><code>Dispose()</code></td><td>On destroy or domain reload</td><td>Nothing to release in this class.</td></tr>
+</tbody>
+</table>
+<h3>Scripting API &mdash; Focus (Depth Mode)</h3>
+<table>
+<thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>SetFocusCenter</code></td><td><code>(float depth)</code></td><td>Centers the focus zone at the given depth, preserving its width.</td></tr>
+<tr><td><code>SetFocusRange</code></td><td><code>(float near, float far)</code></td><td>Sets near and far focus boundaries in world units.</td></tr>
+<tr><td><code>SetFocusNear</code></td><td><code>(float depth)</code></td><td>Sets the near boundary only.</td></tr>
+<tr><td><code>SetFocusFar</code></td><td><code>(float depth)</code></td><td>Sets the far boundary only.</td></tr>
+<tr><td><code>SetFocusTransitions</code></td><td><code>(float nearSmooth, float farSmooth)</code></td><td>Sets transition zone widths in world units.</td></tr>
+</tbody>
+</table>
+<h3>Scripting API &mdash; Focus (Linear Gradient Mode)</h3>
+<table>
+<thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>SetGradientCenter</code></td><td><code>(float normalizedY)</code></td><td>Vertical center of the focus band (0 to 1).</td></tr>
+<tr><td><code>SetGradientShape</code></td><td><code>(float width, float softness)</code></td><td>Band width and edge softness (0 to 1 each).</td></tr>
+<tr><td><code>SetGradientAngle</code></td><td><code>(float degrees)</code></td><td>Band rotation (-90 to +90 degrees).</td></tr>
+</tbody>
+</table>
+<h3>Scripting API &mdash; Blur</h3>
+<table>
+<thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>SetBlurSize</code></td><td><code>(float h, float v)</code></td><td>Sets horizontal and vertical blur radii independently (0 to 20 px).</td></tr>
+<tr><td><code>SetBlurSize</code></td><td><code>(float size)</code></td><td>Sets a uniform blur radius for both axes (0 to 20 px).</td></tr>
+<tr><td><code>SetBlurAngle</code></td><td><code>(float degrees)</code></td><td>Rotates the blur kernel (-90 to +90 degrees).</td></tr>
+</tbody>
+</table>
+<h3>Scripting API &mdash; Mode Switches</h3>
+<table>
+<thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>SetBlurMode</code></td><td><code>(BlurMode mode)</code></td><td>Switch between <code>DepthBased</code> and <code>LinearGradient</code>.</td></tr>
+<tr><td><code>SetBlurEngine</code></td><td><code>(BlurEngine engine)</code></td><td>Switch between <code>Gaussian</code>, <code>Kawase</code>, and <code>DualKawase</code>.</td></tr>
+<tr><td><code>SetBlurQuality</code></td><td><code>(BlurQuality quality)</code></td><td>Set sample or iteration count: <code>Low</code>, <code>Medium</code>, <code>High</code>, <code>Ultra</code>.</td></tr>
+</tbody>
+</table>
+<h3>Scripting API &mdash; Physical Camera</h3>
+<table>
+<thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>SetPhysicalCamera</code></td><td><code>(bool enabled, float fStop = 2.8f, float focalLength = 50f, float sensorHeight = 24f)</code></td><td>Enable or disable physical lens simulation. Only active in Depth Based mode.</td></tr>
+</tbody>
+</table>
+<h3>Scripting API &mdash; Debug</h3>
+<table>
+<thead><tr><th>Method</th><th>Signature</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>SetDebugMode</code></td><td><code>(bool enabled)</code></td><td>Toggle the focus zone color overlay.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="doc-section" data-id="time-control">
+<h2>TiltShiftTimeControlFeature</h2>
+<p><strong>Namespace:</strong> <code>TiltShift</code> &middot; <strong>Inherits:</strong> <code>ScriptableRendererFeature</code> &middot; <strong>File:</strong> <code>Runtime/TiltShiftTimeControlFeature.cs</code></p>
+<p>Optional companion feature that combines <strong>game speed</strong> control (<code>Time.timeScale</code>) with <strong>frame-rate simulation</strong> (frame skip) for an enhanced miniature / stop-motion camera look. Both sections can be used independently or together.</p>
+<p>Add this feature <strong>after</strong> <code>TiltShiftRenderFeature</code> in the renderer so the blur is included in the cached frame.</p>
+<figure class="doc-img">
+  <div class="doc-img-wrap" data-media="img/tiltshift/MiniatureScreenShot_TimeAndFPSControl.webp">
+    <img src="img/tiltshift/MiniatureScreenShot_TimeAndFPSControl.webp" alt="Time Control inspector with Game Speed and Frame Skip sections" loading="lazy"/>
+    <div class="doc-ph">Time Control &middot; Game Speed + Frame Skip</div>
+  </div>
+  <figcaption>Time Control inspector: Game Speed controls <code style="font-family:var(--mono);color:var(--gold2)">Time.timeScale</code>, Frame Skip simulates a target frame rate.</figcaption>
+</figure>
+<blockquote><strong>WARNING &mdash; <code>Time.timeScale</code> is global.</strong><br>The Game Speed section modifies <code>Time.timeScale</code> and optionally <code>Time.fixedDeltaTime</code>, which affect <strong>every</strong> gameplay system that reads scaled time: Physics (Rigidbody, collisions, joints), Animator and Animation components, Particle Systems, Coroutines using <code>WaitForSeconds</code> (use <code>WaitForSecondsRealtime</code> to bypass), NavMesh agents, Audio pitch (when tied to time), any custom script reading <code>Time.deltaTime</code>. Values are saved on activation and restored when the feature is disabled or destroyed.</blockquote>
+<h3>Settings &mdash; Game Speed</h3>
+<table>
+<thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>settings.gameSpeedEnabled</code></td><td><code>bool</code></td><td><code>false</code></td><td>Enable game speed modification.</td></tr>
+<tr><td><code>settings.gameSpeed</code></td><td><code>float</code></td><td><code>0.5</code></td><td>Game speed multiplier (0.01 to 10). Applied to <code>Time.timeScale</code>.</td></tr>
+<tr><td><code>settings.adjustFixedDeltaTime</code></td><td><code>bool</code></td><td><code>true</code></td><td>Scale <code>Time.fixedDeltaTime</code> proportionally to keep physics stable.</td></tr>
+</tbody>
+</table>
+<h3>Settings &mdash; Frame Skip</h3>
+<table>
+<thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>settings.frameSkipEnabled</code></td><td><code>bool</code></td><td><code>false</code></td><td>Enable frame-rate simulation.</td></tr>
+<tr><td><code>settings.simulatedFps</code></td><td><code>int</code></td><td><code>12</code></td><td>Target simulated frame rate (4 to 30 fps).</td></tr>
+<tr><td><code>settings.linkFpsToGameSpeed</code></td><td><code>bool</code></td><td><code>false</code></td><td>Scale simulated FPS with game speed.</td></tr>
+</tbody>
+</table>
+<p>When <code>linkFpsToGameSpeed</code> is enabled, the effective FPS is <code>simulatedFps * gameSpeed</code>, clamped to [4, 30]. For example, <code>simulatedFps = 12</code> and <code>gameSpeed = 0.5</code> produces a 6 fps look.</p>
+<h3>How Frame Skip Works</h3>
+<p>On a render frame (once every 1/effectiveFps seconds): the current rendered image is blitted into a persistent cache (<code>RTHandle</code>).</p>
+<p>On a skip frame (every other frame): the cached image is blitted back over the current frame, holding it frozen.</p>
+<p>The GPU still renders every frame. Only the final presented image is frozen. The frame skip uses <code>Time.unscaledTime</code> for its interval, so it is unaffected by game speed changes.</p>
+<h3>PassData</h3>
+<pre><code>private class PassData
+{
+    public RenderTargetIdentifier cacheRT;     // from RTHandle.rt, safe outside SetRenderFunc
+    public TextureHandle          cameraColor; // converted to RTI inside SetRenderFunc only
+    public bool                   isSkipFrame;
+}</code></pre>
+<p><code>TextureHandle</code> to <code>RenderTargetIdentifier</code> conversion via <code>op_Implicit</code> requires the Render Graph Resource Registry, which is only active inside <code>SetRenderFunc()</code>. Converting a <code>TextureHandle</code> in <code>RecordRenderGraph()</code> throws <code>InvalidOperationException</code>. Store <code>TextureHandle</code> fields in <code>PassData</code> and cast inside <code>SetRenderFunc</code>.</p>
+</div>
+
+<div class="doc-section" data-id="settings">
+<h2>TiltShiftSettings</h2>
+<p><strong>Namespace:</strong> <code>TiltShift</code> &middot; <strong>Attribute:</strong> <code>[Serializable]</code> &middot; <strong>File:</strong> <code>Runtime/TiltShiftSettings.cs</code></p>
+<p>Holds all effect parameters as serializable fields. Lives as a nested field inside <code>TiltShiftRenderFeature</code> and is serialized to the Renderer asset.</p>
+<figure class="doc-img">
+  <div class="doc-img-wrap" data-media="img/tiltshift/MiniatureScreenShot_RenderFeature.webp">
+    <img src="img/tiltshift/MiniatureScreenShot_RenderFeature.webp" alt="Tilt Shift Render Feature inspector showing all settings fields" loading="lazy"/>
+    <div class="doc-ph">Tilt Shift Render Feature &middot; Inspector</div>
+  </div>
+  <figcaption>All Tilt Shift Settings fields exposed on the Render Feature inspector. Depth Based mode ramps blur through <code style="font-family:var(--mono);color:var(--gold2)">depthMinSmooth</code>, stays sharp in the focus zone, then ramps back up through <code style="font-family:var(--mono);color:var(--gold2)">depthMaxSmooth</code>.</figcaption>
+</figure>
+<h3>Mode</h3>
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>material</code></td><td><code>Material</code></td><td><code>null</code></td><td>Material using the <code>TiltShift/S_TiltShift</code> shader. Required.</td></tr>
+<tr><td><code>renderPassEvent</code></td><td><code>RenderPassEvent</code></td><td><code>BeforeRenderingPostProcessing</code></td><td>URP injection point.</td></tr>
+<tr><td><code>activePreset</code></td><td><code>TiltShiftPreset</code></td><td><code>null</code></td><td>Currently assigned preset (inspector drag-and-drop).</td></tr>
+<tr><td><code>blurMode</code></td><td><code>BlurMode</code></td><td><code>DepthBased</code></td><td>Focus zone calculation method.</td></tr>
+<tr><td><code>blurEngine</code></td><td><code>BlurEngine</code></td><td><code>Gaussian</code></td><td>Blur algorithm.</td></tr>
+<tr><td><code>blurQuality</code></td><td><code>BlurQuality</code></td><td><code>High</code></td><td>Sample or iteration count.</td></tr>
+<tr><td><code>bokehShape</code></td><td><code>BokehShape</code></td><td><code>Disabled</code></td><td>Lens bokeh shape (Gaussian only).</td></tr>
+</tbody>
+</table>
+<h3>Focus Zone &mdash; Depth Mode</h3>
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>depthCalculationMode</code></td><td><code>DepthCalculationMode</code></td><td><code>Relative</code></td><td>How depth boundaries are computed.</td></tr>
+<tr><td><code>depthMin</code></td><td><code>float</code></td><td><code>5</code></td><td>Absolute mode: near boundary in meters.</td></tr>
+<tr><td><code>depthMinSmooth</code></td><td><code>float</code></td><td><code>5</code></td><td>Absolute mode: near transition width in meters.</td></tr>
+<tr><td><code>depthMax</code></td><td><code>float</code></td><td><code>15</code></td><td>Absolute mode: far boundary in meters.</td></tr>
+<tr><td><code>depthMaxSmooth</code></td><td><code>float</code></td><td><code>10</code></td><td>Absolute mode: far transition width in meters.</td></tr>
+<tr><td><code>focusDistance</code></td><td><code>float</code></td><td><code>10</code></td><td>Relative mode: focus center in meters.</td></tr>
+<tr><td><code>focusNearPercent</code></td><td><code>float</code></td><td><code>-20</code></td><td>Relative mode: near boundary as a percentage of focus distance.</td></tr>
+<tr><td><code>focusFarPercent</code></td><td><code>float</code></td><td><code>20</code></td><td>Relative mode: far boundary as a percentage of focus distance.</td></tr>
+<tr><td><code>transitionPercent</code></td><td><code>float</code></td><td><code>15</code></td><td>Relative mode: transition width as a percentage of focus distance.</td></tr>
+<tr><td><code>focusPositionNormalized</code></td><td><code>float</code></td><td><code>0.3</code></td><td>Camera Relative mode: normalized focus position (0 = near, 1 = far).</td></tr>
+<tr><td><code>focusWidthNormalized</code></td><td><code>float</code></td><td><code>0.2</code></td><td>Camera Relative mode: normalized focus zone width.</td></tr>
+<tr><td><code>transitionNormalized</code></td><td><code>float</code></td><td><code>0.1</code></td><td>Camera Relative mode: normalized transition width.</td></tr>
+<tr><td><code>autoFocusLayerMask</code></td><td><code>LayerMask</code></td><td><code>Everything</code></td><td>Auto mode: physics layers for the center-screen raycast.</td></tr>
+<tr><td><code>autoFocusMaxDistance</code></td><td><code>float</code></td><td><code>500</code></td><td>Auto mode: maximum raycast distance and fallback.</td></tr>
+<tr><td><code>autoFocusSmoothing</code></td><td><code>float</code></td><td><code>2</code></td><td>Auto mode: smoothing speed (0 = instant, 20 = very fast).</td></tr>
+<tr><td><code>autoFocusDebug</code></td><td><code>bool</code></td><td><code>false</code></td><td>Auto mode: draw center raycast in Scene View (green = hit, yellow = miss, red cross = hit point).</td></tr>
+<tr><td><code>transitionCurve</code></td><td><code>TransitionCurve</code></td><td><code>Smooth</code></td><td>Shape of the blur gradient.</td></tr>
+<tr><td><code>transitionSoftness</code></td><td><code>float</code></td><td><code>1.0</code></td><td>Softness multiplier (0.1 to 3).</td></tr>
+</tbody>
+</table>
+<p>Auto mode reuses the Relative mode zone parameters (<code>focusNearPercent</code>, <code>focusFarPercent</code>, <code>transitionPercent</code>) to define the shape of the focus zone around the dynamically computed focus distance.</p>
+<h3>Focus Zone &mdash; Linear Gradient Mode</h3>
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>gradientCenter</code></td><td><code>float</code></td><td><code>0.5</code></td><td>Vertical band center (0 = bottom, 1 = top).</td></tr>
+<tr><td><code>gradientWidth</code></td><td><code>float</code></td><td><code>0.2</code></td><td>Band width in normalized screen space.</td></tr>
+<tr><td><code>gradientSoftness</code></td><td><code>float</code></td><td><code>0.3</code></td><td>Edge softness.</td></tr>
+<tr><td><code>gradientAngle</code></td><td><code>float</code></td><td><code>0</code></td><td>Band rotation in degrees (-90 to +90).</td></tr>
+</tbody>
+</table>
+<h3>Physical Camera</h3>
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>usePhysicalCamera</code></td><td><code>bool</code></td><td><code>false</code></td><td>Use Circle of Confusion instead of manual blur size. Depth Based only.</td></tr>
+<tr><td><code>fStop</code></td><td><code>float</code></td><td><code>2.8</code></td><td>Aperture f-number (1 to 32). Lower value = stronger blur.</td></tr>
+<tr><td><code>focalLength</code></td><td><code>float</code></td><td><code>50</code></td><td>Focal length in millimeters (10 to 300).</td></tr>
+<tr><td><code>sensorHeight</code></td><td><code>float</code></td><td><code>24</code></td><td>Sensor height in millimeters (10 to 50). 24mm = full-frame.</td></tr>
+</tbody>
+</table>
+<h3>Blur</h3>
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>blurSizeH</code></td><td><code>float</code></td><td><code>3</code></td><td>Horizontal blur radius in pixels (0 to 20).</td></tr>
+<tr><td><code>blurSizeV</code></td><td><code>float</code></td><td><code>3</code></td><td>Vertical blur radius in pixels (0 to 20).</td></tr>
+<tr><td><code>linkBlurSize</code></td><td><code>bool</code></td><td><code>true</code></td><td>Lock H and V together in the inspector.</td></tr>
+<tr><td><code>blurAngle</code></td><td><code>float</code></td><td><code>0</code></td><td>Kernel rotation in degrees (-90 to +90).</td></tr>
+<tr><td><code>blurIterations</code></td><td><code>int</code></td><td><code>2</code></td><td>Gaussian H+V pass pairs per frame (1 to 4).</td></tr>
+</tbody>
+</table>
+<h3>Depth Protection</h3>
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>depthThreshold</code></td><td><code>float</code></td><td><code>0.5</code></td><td>Depth discontinuity threshold (0 to 5). Gaussian + Depth Based only.</td></tr>
+<tr><td><code>depthFalloff</code></td><td><code>float</code></td><td><code>2.0</code></td><td>Rejection sharpness (0.1 to 10).</td></tr>
+</tbody>
+</table>
+<h3>Performance</h3>
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>renderScale</code></td><td><code>RenderScale</code></td><td><code>Full</code></td><td>Blur pass resolution divisor.</td></tr>
+</tbody>
+</table>
+<h3>Debug</h3>
+<table>
+<thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>debugMode</code></td><td><code>bool</code></td><td><code>false</code></td><td>Color overlay: Green = in focus, Red = near blur, Blue = far blur.</td></tr>
+<tr><td><code>applyToSceneView</code></td><td><code>bool</code></td><td><code>false</code></td><td>Apply the effect in the Scene View camera.</td></tr>
+</tbody>
+</table>
+<h3>Computed Properties</h3>
+<pre><code>// Sample count for the current BlurQuality
+// Low=3, Medium=5, High=9, Ultra=13
+int GaussianSampleCount { get; }
+
+// Iteration count for the current BlurQuality
+// Low=2, Medium=3, High=4, Ultra=6
+int KawaseIterations { get; }
+
+// Circle of Confusion formula returning blur radius in pixels.
+// CoC = (f * f) / (N * (d - f)) / sensorHeight * screenHeight * 0.5
+float ComputePhysicalBlurSize(float focusDistanceMeters, float screenHeightPixels);</code></pre>
+</div>
+
+<div class="doc-section" data-id="preset">
+<h2>TiltShiftPreset</h2>
+<p><strong>Namespace:</strong> <code>TiltShift</code> &middot; <strong>Inherits:</strong> <code>ScriptableObject</code> &middot; <strong>File:</strong> <code>Runtime/TiltShiftPreset.cs</code> &middot; <strong>Create Menu:</strong> <code>Right-click &gt; Create &gt; Miniature Camera &gt; Preset</code></p>
+<p>A serialized snapshot of <code>TiltShiftSettings</code> stored as a <code>.asset</code> file.</p>
+<figure class="doc-img">
+  <div class="doc-img-wrap" data-media="img/tiltshift/Presets.webp">
+    <img src="img/tiltshift/Presets.webp" alt="Preset dropdown with built-in presets: Default, Portrait, Landscape, Miniature, Cinematic" loading="lazy"/>
+    <div class="doc-ph">Preset dropdown &middot; 5 built-in presets</div>
+  </div>
+  <figcaption>Drag any <code style="font-family:var(--mono);color:var(--gold2)">.asset</code> preset into the Preset field and it applies instantly.</figcaption>
+</figure>
+<h3>Properties</h3>
+<table>
+<thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>presetName</code></td><td><code>string</code></td><td>Display name shown in the inspector.</td></tr>
+<tr><td><code>description</code></td><td><code>string</code></td><td>Short description (TextArea).</td></tr>
+<tr><td><em>(all settings fields)</em></td><td></td><td>Hidden in the inspector. Access via <code>CaptureFrom</code> and <code>ApplyTo</code>.</td></tr>
+</tbody>
+</table>
+<h3>Methods</h3>
+<pre><code>// Copies all values from the given settings into this preset.
+void CaptureFrom(TiltShiftSettings settings);
+
+// Applies all stored values to the given settings.
+void ApplyTo(TiltShiftSettings settings);</code></pre>
+<h3>Usage</h3>
+<pre><code>// Save current state
+var preset = ScriptableObject.CreateInstance&lt;TiltShiftPreset&gt;();
+preset.presetName = "My Cinematic";
+preset.CaptureFrom(feature.settings);
+AssetDatabase.CreateAsset(preset, "Assets/MyPreset.asset");
+
+// Apply at runtime
+myPreset.ApplyTo(feature.settings);</code></pre>
+<h3>Built-in Presets</h3>
+<p>Generate via <strong>Tools &gt; Miniature Camera &gt; Create Default Presets</strong>.</p>
+<table>
+<thead><tr><th>Preset</th><th>Engine</th><th>Mode</th><th>Use Case</th></tr></thead>
+<tbody>
+<tr><td>Default</td><td>Gaussian</td><td>Depth, Relative</td><td>Baseline starting point</td></tr>
+<tr><td>Portrait</td><td>Gaussian</td><td>Depth, Relative</td><td>Characters, NPCs</td></tr>
+<tr><td>Landscape</td><td>Gaussian</td><td>Depth, Relative</td><td>Environments, open worlds</td></tr>
+<tr><td>Miniature</td><td>Gaussian</td><td>Linear Gradient</td><td>Aerial views, top-down cameras</td></tr>
+<tr><td>Cinematic</td><td>Gaussian</td><td>Depth, Relative</td><td>Cutscenes, hero shots</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="doc-section" data-id="pass">
+<h2>TiltShiftPass (internal)</h2>
+<p><strong>Namespace:</strong> <code>TiltShift</code> &middot; <strong>Visibility:</strong> <code>internal</code> &middot; <strong>Inherits:</strong> <code>ScriptableRenderPass</code> &middot; <strong>File:</strong> <code>Runtime/TiltShiftPass.cs</code></p>
+<p>Handles the render graph integration. Not meant for direct use &mdash; controlled through <code>TiltShiftRenderFeature</code>.</p>
+<h3>Shader Property IDs</h3>
+<p>All <code>Shader.PropertyToID()</code> calls are cached as <code>static readonly int</code> fields to avoid per-frame string hashing.</p>
+<table>
+<thead><tr><th>ID Field</th><th>Shader Uniform</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>ID_DepthMin</code></td><td><code>_DepthMin</code></td><td>Near focus boundary</td></tr>
+<tr><td><code>ID_DepthMax</code></td><td><code>_DepthMax</code></td><td>Far focus boundary</td></tr>
+<tr><td><code>ID_DepthMinSmooth</code></td><td><code>_DepthMinSmooth</code></td><td>Near transition width</td></tr>
+<tr><td><code>ID_DepthMaxSmooth</code></td><td><code>_DepthMaxSmooth</code></td><td>Far transition width</td></tr>
+<tr><td><code>ID_BlurSizeH</code></td><td><code>_BlurSizeH</code></td><td>Horizontal blur radius</td></tr>
+<tr><td><code>ID_BlurSizeV</code></td><td><code>_BlurSizeV</code></td><td>Vertical blur radius</td></tr>
+<tr><td><code>ID_BlurAngle</code></td><td><code>_BlurAngle</code></td><td>Kernel rotation</td></tr>
+<tr><td><code>ID_DepthThreshold</code></td><td><code>_DepthThreshold</code></td><td>Depth protection threshold</td></tr>
+<tr><td><code>ID_DepthFalloff</code></td><td><code>_DepthFalloff</code></td><td>Depth protection falloff</td></tr>
+<tr><td><code>ID_GradientCenter</code></td><td><code>_GradientCenter</code></td><td>Linear band center</td></tr>
+<tr><td><code>ID_GradientWidth</code></td><td><code>_GradientWidth</code></td><td>Linear band width</td></tr>
+<tr><td><code>ID_GradientSoftness</code></td><td><code>_GradientSoftness</code></td><td>Linear band softness</td></tr>
+<tr><td><code>ID_GradientAngle</code></td><td><code>_GradientAngle</code></td><td>Linear band angle</td></tr>
+<tr><td><code>ID_KawaseOffset</code></td><td><code>_KawaseOffset</code></td><td>Kawase iteration offset</td></tr>
+<tr><td><code>ID_TransitionSoft</code></td><td><code>_TransitionSoftness</code></td><td>Transition softness multiplier</td></tr>
+</tbody>
+</table>
+<h3>Shader Keywords</h3>
+<table>
+<thead><tr><th>Keyword</th><th>When Active</th></tr></thead>
+<tbody>
+<tr><td><code>TILTSHIFT_DEBUG</code></td><td><code>debugMode == true</code></td></tr>
+<tr><td><code>TILTSHIFT_LINEAR_GRADIENT</code></td><td><code>blurMode == LinearGradient</code></td></tr>
+<tr><td><code>TILTSHIFT_QUALITY_LOW</code></td><td><code>blurQuality == Low</code></td></tr>
+<tr><td><code>TILTSHIFT_QUALITY_MEDIUM</code></td><td><code>blurQuality == Medium</code></td></tr>
+<tr><td><em>(none)</em></td><td><code>blurQuality == High</code> (default variant)</td></tr>
+<tr><td><code>TILTSHIFT_QUALITY_ULTRA</code></td><td><code>blurQuality == Ultra</code></td></tr>
+<tr><td><code>TILTSHIFT_BOKEH_CIRCLE</code></td><td><code>bokehShape == Circle</code></td></tr>
+<tr><td><code>TILTSHIFT_BOKEH_HEX</code></td><td><code>bokehShape == Hexagonal</code></td></tr>
+<tr><td><code>TILTSHIFT_CURVE_SMOOTH</code></td><td><code>transitionCurve == Smooth</code></td></tr>
+<tr><td><code>TILTSHIFT_CURVE_QUAD</code></td><td><code>transitionCurve == Quadratic</code></td></tr>
+<tr><td><code>TILTSHIFT_CURVE_CUBIC</code></td><td><code>transitionCurve == Cubic</code></td></tr>
+<tr><td><em>(none)</em></td><td><code>transitionCurve == Linear</code> (default variant)</td></tr>
+</tbody>
+</table>
+<h3>Render Graph Passes</h3>
+<table>
+<thead><tr><th>Pass Name</th><th>Engine</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>TiltShift_Downsample</code></td><td>Gaussian (scaled)</td><td>Blit to half or quarter resolution</td></tr>
+<tr><td><code>TiltShift_BlurH_{i}</code></td><td>Gaussian</td><td>Horizontal blur pass i</td></tr>
+<tr><td><code>TiltShift_BlurV_{i}</code></td><td>Gaussian</td><td>Vertical blur pass i</td></tr>
+<tr><td><code>TiltShift_Bokeh_{i}</code></td><td>Gaussian + Bokeh</td><td>Combined bokeh pass i</td></tr>
+<tr><td><code>TiltShift_Upsample</code></td><td>Gaussian (scaled)</td><td>Blit back to full resolution</td></tr>
+<tr><td><code>TiltShift_CopyFinal</code></td><td>All engines</td><td>Copy blurred result to source</td></tr>
+<tr><td><code>TiltShift_Kawase_{i}</code></td><td>Kawase</td><td>Kawase blur iteration i (cloned material)</td></tr>
+<tr><td><code>TiltShift_DKDown</code></td><td>Dual Kawase</td><td>Downsample to half resolution (cloned material)</td></tr>
+<tr><td><code>TiltShift_DKIter_{i}</code></td><td>Dual Kawase</td><td>Kawase iteration at half resolution (cloned material)</td></tr>
+<tr><td><code>TiltShift_DKUp</code></td><td>Dual Kawase</td><td>Upsample to full resolution (cloned material)</td></tr>
+<tr><td><code>TiltShift_Debug</code></td><td>Debug</td><td>Single blit through the debug pass</td></tr>
+<tr><td><code>TiltShift_CopyDebug</code></td><td>Debug</td><td>Copy debug result to source</td></tr>
+</tbody>
+</table>
+<p>Kawase and Dual Kawase passes use <code>AddBlitPass</code> with <strong>pre-cloned materials</strong>. At construction time, 6 permanent copies of the base material are created, each with a different <code>_KawaseOffset</code> value baked in. Each <code>AddBlitPass</code> call receives its own clone, so every iteration is genuinely independent. Without cloning, all passes would share a single material reference and read the last offset value written on CPU, making all iterations produce identical results.</p>
+</div>
+
+<div class="doc-section" data-id="enumerations">
+<h2>Enumerations</h2>
+<h3>BlurMode</h3>
+<pre><code>public enum BlurMode
+{
+    DepthBased     = 0,  // Focus zone driven by the depth buffer
+    LinearGradient = 1   // Screen-space focus band (photo tilt-shift look)
+}</code></pre>
+<h3>BlurEngine</h3>
+<pre><code>public enum BlurEngine
+{
+    Gaussian   = 0,  // Separable Gaussian, highest quality, supports depth protection
+    Kawase     = 1,  // Kawase, faster, good for mid-range hardware
+    DualKawase = 2   // Dual Kawase, fastest, works at half resolution
+}</code></pre>
+<h3>BlurQuality</h3>
+<pre><code>public enum BlurQuality
+{
+    Low    = 0,  // Gaussian: 3 samples  / Kawase: 2 iterations
+    Medium = 1,  // Gaussian: 5 samples  / Kawase: 3 iterations
+    High   = 2,  // Gaussian: 9 samples  / Kawase: 4 iterations (default)
+    Ultra  = 3   // Gaussian: 13 samples / Kawase: 6 iterations
+}</code></pre>
+<h3>BokehShape</h3>
+<pre><code>public enum BokehShape
+{
+    Disabled   = 0,  // Standard elliptical blur
+    Circle     = 1,  // 8-direction radial sampling
+    Hexagonal  = 2   // 6-direction sampling (vintage lens look)
+}</code></pre>
+<h3>DepthCalculationMode</h3>
+<pre><code>public enum DepthCalculationMode
+{
+    Absolute       = 0,  // Direct world-unit values
+    Relative       = 1,  // Percentages of focus distance (recommended)
+    CameraRelative = 2,  // Normalized between near/far clip planes
+    Auto           = 3   // Raycast from screen center (dynamic)
+}</code></pre>
+<h3>TransitionCurve</h3>
+<pre><code>public enum TransitionCurve
+{
+    Linear    = 0,  // Uniform gradient
+    Smooth    = 1,  // Smoothstep, natural look (recommended)
+    Quadratic = 2,  // x squared, slow start then fast
+    Cubic     = 3   // x cubed, very gradual edges
+}</code></pre>
+<h3>RenderScale</h3>
+<pre><code>public enum RenderScale
+{
+    Full    = 1,  // Full resolution, best quality
+    Half    = 2,  // Half resolution, balanced
+    Quarter = 4   // Quarter resolution, fastest
+}</code></pre>
+</div>
+
+<div class="doc-section" data-id="scripting-api">
+<h2>Scripting API</h2>
+<h3>Getting the Feature Reference</h3>
+<p>There is no static singleton. Locate the feature through reflection on the active renderer:</p>
+<pre><code>public static TiltShiftRenderFeature GetFeature()
+{
+    var urpAsset = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline
+        as UniversalRenderPipelineAsset;
+    if (urpAsset == null) return null;
+
+    var list = typeof(UniversalRenderPipelineAsset)
+        .GetField("m_RendererDataList",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+        ?.GetValue(urpAsset) as ScriptableRendererData[];
+
+    if (list == null) return null;
+
+    foreach (var data in list)
+        if (data != null)
+            foreach (var feat in data.rendererFeatures)
+                if (feat is TiltShiftRenderFeature ts) return ts;
+
+    return null;
+}</code></pre>
+<p>Call this once in <code>Start()</code> and cache the result.</p>
+<h3>Focus Tracking</h3>
+<pre><code>void Update()
+{
+    float distance = Vector3.Distance(cam.transform.position, target.position);
+    feature.SetFocusCenter(distance);
+}</code></pre>
+<h3>Cinematic Focus Pull</h3>
+<pre><code>IEnumerator FocusPull(float from, float to, float duration)
+{
+    float t = 0f;
+    while (t &lt; 1f)
+    {
+        t += Time.deltaTime / duration;
+        feature.SetFocusCenter(Mathf.SmoothStep(from, to, t));
+        yield return null;
+    }
+}</code></pre>
+<h3>Preset Switching</h3>
+<pre><code>[SerializeField] private TiltShiftPreset portraitPreset;
+[SerializeField] private TiltShiftPreset landscapePreset;
+
+void OnDialogueStart() =&gt; portraitPreset.ApplyTo(feature.settings);
+void OnDialogueEnd()   =&gt; landscapePreset.ApplyTo(feature.settings);</code></pre>
+<h3>Physical Camera</h3>
+<pre><code>feature.SetPhysicalCamera(
+    enabled:      true,
+    fStop:        1.4f,   // wide open, very shallow DoF
+    focalLength:  85f,    // portrait telephoto
+    sensorHeight: 24f     // full-frame sensor
+);</code></pre>
+</div>
+
+<div class="doc-section" data-id="preset-system">
+<h2>Preset System</h2>
+<h3>Creating a Preset from the Inspector</h3>
+<ol>
+<li>Click <strong>Save as Preset</strong> in the Miniature Camera inspector</li>
+<li>Choose a save location</li>
+<li>The preset is saved as a <code>.asset</code> file and auto-assigned</li>
+</ol>
+<h3>Creating a Preset from Code</h3>
+<pre><code>var preset = ScriptableObject.CreateInstance&lt;TiltShiftPreset&gt;();
+preset.presetName = "My Cinematic";
+preset.description = "Hero shot";
+preset.CaptureFrom(feature.settings);
+AssetDatabase.CreateAsset(preset, "Assets/TiltShift/Presets/MyCinematic.asset");
+AssetDatabase.SaveAssets();</code></pre>
+<h3>Applying a Preset</h3>
+<p>From the inspector: drag a <code>.asset</code> file into the <strong>Preset</strong> field &mdash; it applies immediately. From code: <code>myPreset.ApplyTo(feature.settings);</code></p>
+<h3>Built-in Presets</h3>
+<p>Located in <code>Assets/TiltShift/Presets/</code>. Generate them via <strong>Tools &gt; Miniature Camera &gt; Create Default Presets</strong>.</p>
+</div>
+
+<div class="doc-section" data-id="shader-passes">
+<h2>Shader Passes Reference</h2>
+<p>The <code>S_TiltShift</code> shader has 6 passes:</p>
+<table>
+<thead><tr><th>Pass Index</th><th>Name</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>BlurH</td><td>Horizontal Gaussian blur, or Bokeh combined pass</td></tr>
+<tr><td>1</td><td>BlurV</td><td>Vertical Gaussian blur</td></tr>
+<tr><td>2</td><td>TiltShift_Debug</td><td>Simple blit used for downsample, upsample, and debug copy</td></tr>
+<tr><td>3</td><td>Kawase</td><td>Kawase blur kernel, applied at varying offsets</td></tr>
+<tr><td>4</td><td>DualKawaseDown</td><td>Dual Kawase downsample from full to half resolution</td></tr>
+<tr><td>5</td><td>DualKawaseUp</td><td>Dual Kawase upsample from half back to full resolution</td></tr>
+</tbody>
+</table>
+<p>All passes read from <code>_MainTex</code> (the source texture provided by the blit or unsafe pass).</p>
+</div>
+
+<div class="doc-section" data-id="performance">
+<h2>Performance Guide</h2>
+<h3>Blur Engine Comparison</h3>
+<table>
+<thead><tr><th>Engine</th><th>GPU Cost (1080p, RTX 3070)</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>Gaussian, High, 2 iterations</td><td>~1.2ms</td><td>Best quality, supports depth protection and bokeh</td></tr>
+<tr><td>Kawase, High</td><td>~0.6ms</td><td>Good for mid-range hardware, no depth protection</td></tr>
+<tr><td>Dual Kawase, High</td><td>~0.3ms</td><td>Fastest option, works at half resolution</td></tr>
+</tbody>
+</table>
+<h3>Gaussian Iterations</h3>
+<p>Each additional iteration roughly doubles the effective blur radius:</p>
+<table>
+<thead><tr><th>Iterations</th><th>Effective Radius</th><th>GPU Cost</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>r</td><td>0.6ms</td></tr>
+<tr><td>2</td><td>~1.4r</td><td>1.2ms</td></tr>
+<tr><td>3</td><td>~1.7r</td><td>1.8ms</td></tr>
+<tr><td>4</td><td>~2r</td><td>2.4ms</td></tr>
+</tbody>
+</table>
+<h3>Render Scale</h3>
+<table>
+<thead><tr><th>Scale</th><th>Pixel Count</th><th>GPU Multiplier</th></tr></thead>
+<tbody>
+<tr><td>Full</td><td>100%</td><td>1.0x</td></tr>
+<tr><td>Half</td><td>25%</td><td>~0.25x</td></tr>
+<tr><td>Quarter</td><td>6.25%</td><td>~0.06x</td></tr>
+</tbody>
+</table>
+<p>Use Half at 4K to reduce the blur to 1080p workload with minimal visible quality loss.</p>
+<h3>Platform Recommendations</h3>
+<table>
+<thead><tr><th>Platform</th><th>Engine</th><th>Quality</th><th>Scale</th><th>Iterations</th></tr></thead>
+<tbody>
+<tr><td>PC high-end</td><td>Gaussian</td><td>Ultra</td><td>Full</td><td>3</td></tr>
+<tr><td>PC mid-range</td><td>Gaussian</td><td>High</td><td>Full</td><td>2</td></tr>
+<tr><td>Console</td><td>Gaussian</td><td>High</td><td>Half</td><td>2</td></tr>
+<tr><td>Mobile high-end</td><td>Kawase</td><td>High</td><td>Full</td><td>&mdash;</td></tr>
+<tr><td>Mobile mid/low</td><td>Dual Kawase</td><td>Medium</td><td>Half</td><td>&mdash;</td></tr>
+<tr><td>VR</td><td>Dual Kawase</td><td>Low</td><td>Quarter</td><td>&mdash;</td></tr>
+</tbody>
+</table>
+<figure class="doc-img">
+  <div class="doc-img-wrap" data-media="img/tiltshift/MiniatureScreenShot_Profiler.webp">
+    <img src="img/tiltshift/MiniatureScreenShot_Profiler.webp" alt="Unity profiler showing Miniature Camera GPU cost per pass" loading="lazy"/>
+    <div class="doc-ph">Unity Profiler &middot; GPU timing</div>
+  </div>
+  <figcaption>ProfilingSampler markers for each pass make it easy to measure cost in the Unity Profiler.</figcaption>
+</figure>
+</div>
+
+<div class="doc-section" data-id="troubleshooting">
+<h2>Troubleshooting</h2>
+<h3>Effect not visible</h3>
+<ul>
+<li>Check that <strong>Depth Texture</strong> is enabled on the URP Renderer asset (under <strong>Rendering</strong>)</li>
+<li>Check that the <code>M_TiltShift</code> material is assigned in the feature inspector</li>
+<li>Confirm the feature is enabled in the URP Renderer asset</li>
+<li>Verify <code>blurSizeH</code> and <code>blurSizeV</code> are greater than 0</li>
+<li>In Depth Based mode, check that <code>focusDistance</code> and the near/far values cover objects in the scene</li>
+</ul>
+<figure class="doc-img">
+  <div class="doc-img-wrap" data-media="img/tiltshift/DepthTexture_On.webp">
+    <img src="img/tiltshift/DepthTexture_On.webp" alt="URP Renderer asset with Depth Texture checkbox enabled under Rendering" loading="lazy"/>
+    <div class="doc-ph">URP Renderer &middot; Enable Depth Texture</div>
+  </div>
+  <figcaption>Depth Texture must be ticked on the URP Renderer, otherwise the depth buffer is unavailable and Depth Based mode produces no effect.</figcaption>
+</figure>
+<h3>Debug Mode &mdash; visualize focus zones</h3>
+<p>Toggle <code>debugMode</code> on the feature to paint the scene with focus-zone colors: <strong style="color:#60d080">green</strong> for the sharp focus band, <strong style="color:#f07840">red</strong> for the near blur, <strong style="color:#7eb8f7">blue</strong> for the far blur. Invaluable to tune <code>focusDistance</code> and the transition widths.</p>
+<figure class="doc-img">
+  <div class="doc-img-wrap" data-media="img/tiltshift/MiniatureScreenShot_DebugVisuals.webp">
+    <img src="img/tiltshift/MiniatureScreenShot_DebugVisuals.webp" alt="Debug overlay showing green focus zone, red near blur, blue far blur" loading="lazy"/>
+    <div class="doc-ph">Debug Overlay &middot; Green / Red / Blue zones</div>
+  </div>
+  <figcaption>Debug overlay active: green = in focus, red = near blur, blue = far blur.</figcaption>
+</figure>
+<h3>InvalidOperationException: Current Render Graph Resource Registry is not set</h3>
+<p>A <code>TextureHandle</code> was implicitly converted to <code>RenderTargetIdentifier</code> outside of <code>SetRenderFunc()</code>. Store <code>TextureHandle</code> fields in <code>PassData</code> and perform the cast <code>(RenderTargetIdentifier)handle</code> only inside the <code>SetRenderFunc</code> lambda.</p>
+<h3>ZBinningJob errors in the console</h3>
+<p>These are cascading URP internal errors triggered by a failing render pass. Fix the primary error above and they go away.</p>
+<h3>Blur bleeds over foreground objects</h3>
+<p>Enable Depth Protection and raise <code>depthThreshold</code> (try 1.0 to 2.0). This only works with <code>BlurEngine.Gaussian</code> and <code>BlurMode.DepthBased</code>.</p>
+<h3>Bokeh shape not visible</h3>
+<p>Bokeh requires <code>blurEngine == Gaussian</code>. The radius also needs to be at least 8 pixels to show the shape clearly.</p>
+<h3>Kawase Ultra looks worse than Kawase Low</h3>
+<p>This was a bug where <code>_KawaseOffset</code> was set during <code>RecordRenderGraph</code> but all passes shared the same material reference, so every pass ended up using the last offset value. The fix uses 6 pre-cloned materials, each with a different <code>_KawaseOffset</code> baked in at construction time. Update to the latest version to get the fix.</p>
+<h3>Frame Skip stuttering feels too regular</h3>
+<p>Add a small random variation from code:</p>
+<pre><code>timeControlFeature.settings.simulatedFps = Mathf.RoundToInt(12f + Random.Range(-1f, 1f));</code></pre>
+<h3>Time Control: game feels broken after enabling Game Speed</h3>
+<p>The Game Speed section of <code>TiltShiftTimeControlFeature</code> modifies <code>Time.timeScale</code>, which is <strong>global</strong>. Every system reading <code>Time.deltaTime</code> will slow down: physics, animations, particles, coroutines (<code>WaitForSeconds</code>), NavMesh, etc. This is by design for the miniature effect, but it will break gameplay that expects normal speed. Use during non-interactive sequences or dedicated cinematic cameras only. If the value gets stuck after a crash, reset it manually: <code>Time.timeScale = 1f; Time.fixedDeltaTime = 0.02f;</code>.</p>
+<h3>Time Control: fixedDeltaTime not restored</h3>
+<p>If <code>adjustFixedDeltaTime</code> is on and the application crashes or the domain reloads unexpectedly while the feature is active, <code>Time.fixedDeltaTime</code> may stay at a scaled value. Add a safety reset:</p>
+<pre><code>[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+static void ResetTime()
+{
+    Time.timeScale      = 1f;
+    Time.fixedDeltaTime = 0.02f;
+}</code></pre>
+<h3>Scene View shows the effect</h3>
+<p>Set <code>settings.applyToSceneView = false</code>. This is the default. The feature checks <code>cameraData.isSceneViewCamera</code> and skips if the setting is off.</p>
+</div>
+
+<div class="doc-section" data-id="changelog" id="changelog">
+<h2>Changelog</h2>
+<h3>v1.0.0</h3>
+<ul>
+<li>Gaussian, Kawase, Dual Kawase blur engines</li>
+<li>Depth Based and Linear Gradient blur modes</li>
+<li>Absolute, Relative, Camera Relative, and Auto depth calculation modes</li>
+<li><strong>Auto Focus</strong> &mdash; <code>DepthCalculationMode.Auto</code> raycasts from screen center to dynamically focus on whatever the camera is looking at. Works with perspective, orthographic, zoom, and camera movement. Configurable layer mask, max distance, and smoothing.</li>
+<li>Physical camera simulation using the Circle of Confusion formula</li>
+<li>Depth protection with bilateral sample rejection</li>
+<li>Bokeh shapes: Circle and Hexagonal</li>
+<li>Transition curves: Linear, Smooth, Quadratic, Cubic</li>
+<li>Render Scale at Full, Half, and Quarter resolution</li>
+<li><strong>Time Control</strong> &mdash; unified Renderer Feature combining game speed (<code>Time.timeScale</code>, 0.01x&ndash;10x) and frame-rate simulation in a single inspector, with <code>fixedDeltaTime</code> scaling and global-state warnings</li>
+<li>Link to Game Speed option that automatically scales simulated FPS with game speed</li>
+<li>Time Control section in the Scene View overlay with game speed and frame skip controls</li>
+<li>Preset system with ScriptableObject assets and inspector buttons (5 built-in presets)</li>
+<li>Full scripting API with automatic value clamping</li>
+<li>Custom inspector with collapsible sections</li>
+<li>Scene View overlay for quick access to common settings</li>
+<li>Debug mode with focus zone color overlay</li>
+<li>Auto Focus debug raycast visualization in Scene View</li>
+<li>Unity 6 URP Render Graph support via <code>RecordRenderGraph</code></li>
+<li>Kawase and Dual Kawase passes use pre-cloned materials with baked <code>_KawaseOffset</code> values</li>
+</ul>
+</div>
+
+      </main>
+      <aside class="ts-sidebar" id="ts-sidebar">
+        <div class="ts-search-wrap">
+          <span class="ts-search-ico">&#9906;</span>
+          <input id="doc-search" type="search" placeholder="Search docs..." autocomplete="off" spellcheck="false"/>
+          <button class="ts-search-clear" id="doc-search-clear" type="button">&#x2715;</button>
+          <div class="ts-search-count" id="doc-search-count"></div>
+        </div>
+        <div class="ts-toc-label">On this page</div>
+        <nav class="ts-toc" id="ts-toc"></nav>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<button class="back-top" id="back-top" type="button" title="Back to top">&uarr;</button>
+
+<footer>
+  <span>&copy; 2025 KILIAN ALLAIRE</span>
+  <span>MINIATURE CAMERA &middot; UNITY 6 URP</span>
+  <span>BORDEAUX, FRANCE</span>
+</footer>
+
+<div id="lightbox">
+  <button class="lb-close" id="lb-close">Close &#x2715;</button>
+  <button class="lb-nav" id="lb-prev">&larr; Prev</button>
+  <img class="lb-media" id="lb-img" src="" alt="" style="display:none"/>
+  <video class="lb-media" id="lb-video" autoplay loop muted playsinline style="display:none"></video>
+  <button class="lb-nav" id="lb-next">Next &rarr;</button>
+  <div class="lb-counter" id="lb-counter"></div>
+</div>
+
+<script>
+/* ── Custom cursor (desktop only) ── */
+const isTouchDevice=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
+const cur=document.getElementById('cursor'),ring=document.getElementById('cursor-ring');
+if(isTouchDevice){cur.style.display='none';ring.style.display='none';}
+else{
+  let mx=0,my=0,rx=0,ry=0;
+  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});
+  (function loop(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(loop)})();
+  document.querySelectorAll('a,button,input,.gal-item,.lb-nav,.ts-toc a,.doc-img-wrap').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{ring.style.width='44px';ring.style.height='44px';ring.style.borderColor='rgba(212,168,67,.65)'});
+    el.addEventListener('mouseleave',()=>{ring.style.width='30px';ring.style.height='30px';ring.style.borderColor='rgba(212,168,67,.35)'});
+  });
+}
+
+/* ── Hero YouTube facade: click to load iframe inline (saves ~500kb until clicked) ── */
+(function(){
+  const facade=document.getElementById('yt-facade');
+  if(!facade)return;
+  facade.addEventListener('click',e=>{
+    const id=facade.dataset.ytId;
+    if(!id||id==='YOUR_VIDEO_ID')return; /* sentinel: let link open YouTube if ID not configured */
+    e.preventDefault();
+    e.stopPropagation();
+    const iframe=document.createElement('iframe');
+    iframe.src='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&rel=0&modestbranding=1&playsinline=1';
+    iframe.title='Miniature Camera demo';
+    iframe.setAttribute('allow','accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen');
+    iframe.setAttribute('allowfullscreen','');
+    iframe.setAttribute('loading','lazy');
+    iframe.style.cssText='width:100%;height:100%;border:0;display:block';
+    facade.parentNode.replaceChild(iframe,facade);
+  });
+})();
+
+/* ── Gallery: hide image on error, hide placeholder on load ── */
+document.querySelectorAll('.gal-item img').forEach(img=>{
+  img.addEventListener('error',()=>{img.style.display='none';});
+  img.addEventListener('load',()=>{const ph=img.parentElement.querySelector('.gal-ph');if(ph)ph.style.display='none';});
+});
+
+/* ── Inline doc images: same behavior + click opens lightbox ── */
+document.querySelectorAll('.doc-img-wrap').forEach(wrap=>{
+  const img=wrap.querySelector('img');
+  if(img){
+    img.addEventListener('error',()=>{img.style.display='none';});
+    img.addEventListener('load',()=>{const ph=wrap.querySelector('.doc-ph');if(ph)ph.style.display='none';});
+  }
+  wrap.addEventListener('click',()=>{
+    const src=wrap.dataset.media;
+    if(src)openLightbox([src],0);
+  });
+});
+
+/* ── Space out camelCase titles (Bebas Neue has no lowercase, so "TiltShiftRenderFeature" becomes hard to read) ── */
+document.querySelectorAll('.doc-section h2, .doc-section h3').forEach(h=>{
+  /* Walk text nodes only — don't touch inline <code> or other elements */
+  [...h.childNodes].forEach(n=>{
+    if(n.nodeType===3 && /[a-z][A-Z]/.test(n.nodeValue)){
+      n.nodeValue=n.nodeValue.replace(/([a-z])([A-Z])/g,'$1 $2');
+    }
+  });
+});
+
+/* ── Build TOC from doc sections ── */
+const tocEl=document.getElementById('ts-toc');
+const allSections=[...document.querySelectorAll('.doc-section')];
+const subIds=new Set(['render-feature','time-control','settings','preset','pass']);
+const compRefAdded={done:false};
+allSections.forEach(sec=>{
+  const id=sec.dataset.id;
+  const h2=sec.querySelector('h2');
+  if(!h2)return;
+  /* Insert "Component Reference" header before first sub */
+  if(subIds.has(id)&&!compRefAdded.done){
+    const hdr=document.createElement('div');
+    hdr.className='ts-toc-label';
+    hdr.style.marginTop='18px';
+    hdr.textContent='Components';
+    tocEl.appendChild(hdr);
+    compRefAdded.done=true;
+  }
+  const a=document.createElement('a');
+  a.href='#'+id;
+  a.textContent=h2.textContent.replace(/\s*\(internal\)\s*$/i,'');
+  a.dataset.target=id;
+  if(subIds.has(id))a.classList.add('sub');
+  tocEl.appendChild(a);
+});
+
+/* ── TOC: smooth scroll + active state on scroll ── */
+const tocLinks=[...tocEl.querySelectorAll('a')];
+tocLinks.forEach(l=>l.addEventListener('click',e=>{
+  e.preventDefault();
+  const t=document.querySelector('[data-id="'+l.dataset.target+'"]');
+  if(t){window.scrollTo({top:t.getBoundingClientRect().top+window.pageYOffset-80,behavior:'smooth'});history.replaceState(null,'','#'+l.dataset.target);}
+}));
+const tocObs=new IntersectionObserver(entries=>{
+  entries.forEach(en=>{
+    if(en.isIntersecting){
+      tocLinks.forEach(l=>l.classList.toggle('active',l.dataset.target===en.target.dataset.id));
+    }
+  });
+},{rootMargin:'-80px 0px -70% 0px'});
+allSections.forEach(s=>tocObs.observe(s));
+
+/* ── Search ── */
+const searchInput=document.getElementById('doc-search');
+const searchClear=document.getElementById('doc-search-clear');
+const searchCount=document.getElementById('doc-search-count');
+/* Cache section texts lowercase once (NOTE: refreshed below when highlights are toggled so it stays accurate) */
+const sectionData=allSections.map(s=>({el:s,text:s.textContent.toLowerCase(),id:s.dataset.id}));
+
+/* Remove any previous <mark class="sh"> wrappers across all sections */
+function removeHighlights(){
+  document.querySelectorAll('.doc-section mark.sh').forEach(mk=>{
+    const parent=mk.parentNode;
+    parent.replaceChild(document.createTextNode(mk.textContent),mk);
+    parent.normalize();
+  });
+}
+/* Wrap every occurrence of q (case-insensitive) inside root's text nodes with <mark class="sh"> */
+function highlightIn(root,q){
+  if(!q)return;
+  const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{
+    acceptNode:n=>{
+      const p=n.parentElement;
+      if(!p||!n.nodeValue)return NodeFilter.FILTER_REJECT;
+      if(['SCRIPT','STYLE','MARK'].indexOf(p.tagName)>-1)return NodeFilter.FILTER_REJECT;
+      return re.test(n.nodeValue)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;
+    }
+  });
+  const targets=[];let t;while(t=walker.nextNode())targets.push(t);
+  targets.forEach(tn=>{
+    re.lastIndex=0;
+    const txt=tn.nodeValue;
+    const frag=document.createDocumentFragment();
+    let last=0,m;
+    while((m=re.exec(txt))){
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      const mk=document.createElement('mark');
+      mk.className='sh';
+      mk.textContent=m[0];
+      frag.appendChild(mk);
+      last=m.index+m[0].length;
+      if(m.index===re.lastIndex)re.lastIndex++; /* zero-width guard */
+    }
+    if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));
+    tn.parentNode.replaceChild(frag,tn);
+  });
+}
+
+function runSearch(){
+  removeHighlights();
+  const raw=searchInput.value.trim();
+  const q=raw.toLowerCase();
+  if(!q){
+    sectionData.forEach(s=>s.el.classList.remove('hidden'));
+    tocLinks.forEach(l=>l.classList.remove('hidden'));
+    searchClear.classList.remove('visible');
+    searchCount.classList.remove('visible');
+    return;
+  }
+  searchClear.classList.add('visible');
+  let hits=0;
+  const matched=new Set();
+  sectionData.forEach(s=>{
+    const ok=s.text.includes(q);
+    s.el.classList.toggle('hidden',!ok);
+    if(ok){hits++;matched.add(s.id);highlightIn(s.el,raw);}
+  });
+  tocLinks.forEach(l=>l.classList.toggle('hidden',!matched.has(l.dataset.target)));
+  searchCount.textContent=hits+' section'+(hits!==1?'s':'')+' matched';
+  searchCount.classList.add('visible');
+}
+searchInput.addEventListener('input',runSearch);
+searchClear.addEventListener('click',()=>{searchInput.value='';runSearch();searchInput.focus();});
+/* Keyboard shortcut: / focuses search */
+document.addEventListener('keydown',e=>{
+  if(e.key==='/'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){
+    e.preventDefault();searchInput.focus();
+  }
+  if(e.key==='Escape'){
+    if(document.getElementById('lightbox').classList.contains('open'))closeLightbox();
+    else if(document.activeElement===searchInput){searchInput.value='';runSearch();searchInput.blur();}
+  }
+  if(e.key==='ArrowLeft')lbNav(-1);
+  if(e.key==='ArrowRight')lbNav(1);
+});
+
+/* (TOC sidebar is a plain sticky column — no drawer logic needed) */
+
+/* ── Smooth scroll for feat-card → doc section ── */
+document.querySelectorAll('.feat-card[href^="#"]').forEach(card=>{
+  card.addEventListener('click',e=>{
+    const id=card.getAttribute('href').slice(1);
+    const t=document.querySelector('[data-id="'+id+'"]');
+    if(t){
+      e.preventDefault();
+      window.scrollTo({top:t.getBoundingClientRect().top+window.pageYOffset-80,behavior:'smooth'});
+      history.replaceState(null,'','#'+id);
+    }
+  });
+});
+
+/* ── Back to top ── */
+const backTop=document.getElementById('back-top');
+window.addEventListener('scroll',()=>{
+  backTop.classList.toggle('visible',window.scrollY>600);
+},{passive:true});
+backTop.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+
+/* ── Lightbox (for gallery) ── */
+let lbItems=[],lbIdx=0;
+const lb=document.getElementById('lightbox'),lbImg=document.getElementById('lb-img'),lbVid=document.getElementById('lb-video'),lbCounter=document.getElementById('lb-counter');
+function openLightbox(items,idx){lbItems=items;lbIdx=idx;lb.classList.add('open');document.body.style.overflow='hidden';renderLb()}
+function closeLightbox(){lb.classList.remove('open');lbVid.pause();lbVid.src='';document.body.style.overflow=''}
+function renderLb(){const src=lbItems[lbIdx];const isVid=src&&(src.endsWith('.mp4')||src.endsWith('.webm'));lbImg.style.display=isVid?'none':'block';lbVid.style.display=isVid?'block':'none';if(isVid){lbVid.src=src;lbVid.play()}else{lbImg.src=src||''}lbCounter.textContent=(lbIdx+1)+' / '+lbItems.length;}
+function lbNav(dir){if(!lbItems.length)return;lbIdx=(lbIdx+dir+lbItems.length)%lbItems.length;renderLb()}
+document.getElementById('lb-close').addEventListener('click',closeLightbox);
+document.getElementById('lb-prev').addEventListener('click',()=>lbNav(-1));
+document.getElementById('lb-next').addEventListener('click',()=>lbNav(1));
+lb.addEventListener('click',e=>{if(e.target===lb)closeLightbox()});
+document.querySelectorAll('.gal-item').forEach((item,i,arr)=>{
+  item.addEventListener('click',()=>{
+    const srcs=[...arr].map(a=>a.dataset.media);
+    openLightbox(srcs,i);
+  });
+});
+
+/* ── Reveal on scroll ── */
+const obs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('visible');obs.unobserve(x.target)}}),{threshold:.07});
+document.querySelectorAll('.reveal').forEach(r=>obs.observe(r));
+</script>
+</body>
+</html>

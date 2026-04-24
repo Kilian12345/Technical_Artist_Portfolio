@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//f/GIT/TiltShift_UnityTool/Assets/TiltShift/Documentation/**)",
+      "Read(//f/GIT/TiltShift_UnityTool/Assets/TiltShift/**)"
+    ]
+  }
+}
