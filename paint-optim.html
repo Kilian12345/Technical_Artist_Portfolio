@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Paint-on-Texture GPU Optimization &middot; Unity Case Study | Kilian Allaire</title>
+<meta name="description" content="Case study: optimizing a paint-on-texture system in Unity (URP, D3D12). CPU 19.93 to 13.18ms (-34%), DXGI 15.66 to 4.16ms (-73%), GPU submits 200 to 30 per frame (-85%). CommandBuffer batching, sync fixes, code walkthrough with profiler captures."/>
+<meta name="keywords" content="Unity GPU optimization, CommandBuffer batching, DXGI WaitOnSwapChain, RenderTexture, paint on texture, Unity profiler, D3D12, GPU stall, Kilian Allaire"/>
+<meta name="author" content="Kilian Allaire"/>
+<meta name="robots" content="index, follow"/>
+<link rel="canonical" href="https://kilianallaire.com/paint-optim.html"/>
+<link rel="icon" type="image/png" href="img/favicon/favicon.png"/>
+<link rel="apple-touch-icon" href="img/favicon/favicon.png"/>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle","headline":"Paint-on-Texture GPU Optimization for Unity","author":{"@type":"Person","name":"Kilian Allaire","url":"https://kilianallaire.com"},"datePublished":"2026-04-25","description":"Case study optimizing a Unity paint-on-texture system: CPU -34%, DXGI -73%, GPU submits -85% via CommandBuffer batching and CPU/GPU sync fixes.","keywords":"Unity, GPU optimization, CommandBuffer, RenderTexture, profiling","articleSection":"Graphics Programming"}
+</script>
+<meta property="og:type" content="article"/>
+<meta property="og:url" content="https://kilianallaire.com/paint-optim.html"/>
+<meta property="og:title" content="Paint-on-Texture GPU Optimization &middot; Unity Case Study"/>
+<meta property="og:description" content="From 50 fps stutter to 133 fps stable. CommandBuffer batching, GPU stall analysis on a real Unity production tool."/>
+<meta property="og:image" content="https://kilianallaire.com/img/paint-optim/final-rendu.png"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Paint-on-Texture GPU Optimization &middot; Unity"/>
+<meta name="twitter:description" content="Case study: CommandBuffer batching, DXGI sync fixes, profiler captures. -85% GPU submits per frame."/>
+<meta name="twitter:image" content="https://kilianallaire.com/img/paint-optim/final-rendu.png"/>
+<link rel="stylesheet" href="shared.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"/>
+<style>
+.wrap{max-width:1200px;margin:0 auto;padding:0 60px}
+.sec-label{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:.16em;text-transform:uppercase;display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.sec-label::before{content:'';width:24px;height:1px;background:var(--gold)}
+
+/* HERO */
+.ts-hero{position:relative;padding:140px 0 80px;border-bottom:1px solid var(--line)}
+.ts-hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.ts-back{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:28px;display:inline-block}
+.ts-back a{color:var(--muted);text-decoration:none;transition:color .2s}
+.ts-back a:hover{color:var(--gold)}
+.ts-title{font-family:var(--display);font-size:clamp(40px,5vw,70px);letter-spacing:.03em;line-height:.95;margin:14px 0 14px}
+.ts-subtitle{font-size:16px;color:var(--text);font-weight:400;line-height:1.5;margin-bottom:18px;max-width:520px}
+.ts-desc{font-size:14px;color:var(--muted);line-height:1.85;font-weight:300;margin-bottom:28px;max-width:520px}
+.ts-desc strong{color:var(--text);font-weight:400}
+.ts-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:28px}
+.ts-ctas{display:flex;gap:14px;flex-wrap:wrap}
+.ts-hero-visual{aspect-ratio:16/9;background:var(--dark3);border:1px solid var(--line);overflow:hidden;position:relative;cursor:none}
+.ts-hero-visual img{width:100%;height:100%;object-fit:contain;display:block;filter:brightness(.92);transition:filter .35s,transform .5s}
+.ts-hero-visual:hover img{filter:brightness(1.06);transform:scale(1.02)}
+.ts-hero-visual .ts-hero-cap{position:absolute;bottom:14px;left:14px;font-family:var(--mono);font-size:9px;color:#fff;letter-spacing:.14em;text-transform:uppercase;background:rgba(3,3,10,.7);padding:5px 9px;border:1px solid rgba(255,255,255,.15)}
+.ts-hero-visual .doc-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.55);letter-spacing:.12em;text-transform:uppercase;background:linear-gradient(135deg,#0a1520,#0d3050);pointer-events:none}
+
+/* META STRIP */
+.ts-meta{padding:36px 0;border-bottom:1px solid var(--line);background:var(--dark)}
+.ts-meta-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.ts-meta-cell{background:var(--dark);padding:20px 22px;display:flex;flex-direction:column;gap:6px}
+.ts-meta-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+.ts-meta-val{font-size:14px;font-weight:500;color:var(--text)}
+.ts-meta-val.gold{color:var(--gold)}
+
+/* KPI HIGHLIGHTS */
+.ts-features{padding:80px 0;border-bottom:1px solid var(--line)}
+.ts-features-title{font-family:var(--display);font-size:clamp(36px,4vw,58px);letter-spacing:.03em;line-height:.95;margin-bottom:48px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.kpi-card{background:var(--dark);padding:28px 26px;display:flex;flex-direction:column;gap:6px;transition:background .25s;text-decoration:none;color:inherit;cursor:none;position:relative}
+.kpi-card:hover{background:var(--dark2)}
+.kpi-lbl{font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase}
+.kpi-val{font-family:var(--display);font-size:38px;color:var(--text);letter-spacing:.02em;line-height:1.05;margin-top:4px}
+.kpi-val.gain{color:var(--gold2)}
+.kpi-sub{font-size:12px;color:var(--muted);line-height:1.6;font-weight:300;margin-top:4px}
+.kpi-arrow{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:10px;letter-spacing:.08em;transition:color .2s,transform .2s;display:flex;align-items:center;gap:8px}
+.kpi-card:hover .kpi-arrow{color:var(--gold)}
+.kpi-arrow::before{content:'';width:16px;height:1px;background:currentColor;transition:width .2s}
+.kpi-card:hover .kpi-arrow::before{width:28px}
+
+/* GALLERY */
+.ts-gallery{padding:80px 0;border-bottom:1px solid var(--line)}
+.ts-gal-title{font-family:var(--display);font-size:clamp(36px,4vw,58px);letter-spacing:.03em;line-height:.95;margin-bottom:48px}
+.gal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2px}
+.gal-item{background:var(--dark3);overflow:hidden;cursor:none;position:relative}
+.gal-item img{width:100%;height:auto;display:block;object-fit:contain;filter:brightness(.85);transition:filter .35s,transform .5s}
+.gal-item:hover img{filter:brightness(1.1);transform:scale(1.04)}
+.gal-item .gal-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.55);letter-spacing:.12em;text-transform:uppercase}
+.gal-item .gal-tag{position:absolute;top:12px;left:12px;font-family:var(--mono);font-size:9px;color:#fff;letter-spacing:.14em;text-transform:uppercase;background:rgba(3,3,10,.78);padding:4px 8px;border:1px solid rgba(255,255,255,.15)}
+.gal-item .gal-tag.before{border-color:rgba(220,80,80,.5);color:#f6a4a4}
+.gal-item .gal-tag.after{border-color:rgba(212,168,67,.55);color:var(--gold2)}
+.gal-item::after{content:'⊕';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;color:rgba(255,255,255,0);transition:color .25s;pointer-events:none}
+.gal-item:hover::after{color:rgba(255,255,255,.7)}
+
+/* DOCS */
+.ts-docs{padding:80px 0 120px;position:relative}
+.ts-docs-head{margin-bottom:40px}
+.ts-docs-title{font-family:var(--display);font-size:clamp(36px,4vw,58px);letter-spacing:.03em;line-height:.95;margin-bottom:12px}
+.ts-docs-sub{font-size:14px;color:var(--muted);max-width:600px;line-height:1.7;font-weight:300}
+.ts-docs-layout{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:56px;align-items:start}
+.ts-content{min-width:0}
+.ts-sidebar{position:sticky;top:88px;align-self:start;max-height:calc(100vh - 104px);overflow-y:auto;padding:16px 16px 16px 14px;background:var(--dark);border:1px solid var(--line);scrollbar-width:thin;scrollbar-color:var(--dim) transparent;z-index:2;text-align:right}
+.ts-sidebar::-webkit-scrollbar{width:3px}
+.ts-sidebar::-webkit-scrollbar-thumb{background:var(--dim)}
+.ts-search-wrap{margin-bottom:16px;position:relative}
+#doc-search{width:100%;font-family:var(--mono);font-size:11px;color:var(--text);background:var(--dark2);border:1px solid var(--line);padding:10px 12px 10px 32px;letter-spacing:.04em;outline:none;transition:border-color .2s;cursor:none;text-align:left}
+#doc-search::placeholder{color:var(--muted)}
+#doc-search:focus{border-color:var(--gold-bdr)}
+#doc-search::-webkit-search-decoration,#doc-search::-webkit-search-cancel-button,#doc-search::-webkit-search-results-button,#doc-search::-webkit-search-results-decoration{-webkit-appearance:none;display:none}
+#doc-search::-ms-clear,#doc-search::-ms-reveal{display:none;width:0;height:0}
+.ts-search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:11px;color:var(--muted);pointer-events:none}
+.ts-search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:none;padding:4px 6px;letter-spacing:.08em;opacity:0;transition:opacity .2s,color .2s}
+.ts-search-clear.visible{opacity:1}
+.ts-search-clear:hover{color:var(--gold)}
+.ts-search-count{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em;margin-top:6px;padding-left:4px;display:none}
+.ts-search-count.visible{display:block}
+.doc-section mark.sh{background:rgba(212,168,67,.22);color:var(--gold2);padding:0 2px;border-bottom:1px solid var(--gold-bdr);border-radius:1px}
+.ts-toc-label{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;padding:0 0 8px;border-bottom:1px solid var(--line);margin-bottom:6px;text-align:right}
+.ts-toc{position:static;top:auto;left:auto;right:auto;z-index:auto;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;padding:0;height:auto;background:transparent;backdrop-filter:none;border-bottom:none}
+.ts-toc a{display:block;padding:5px 10px;font-family:var(--mono);font-size:10.5px;color:var(--muted);text-decoration:none;letter-spacing:.04em;border-right:2px solid transparent;transition:color .15s,border-color .15s;cursor:none;line-height:1.45;text-align:right}
+.ts-toc a:hover{color:var(--text);border-right-color:var(--line2)}
+.ts-toc a.active{color:var(--gold);border-right-color:var(--gold)}
+.ts-toc a.hidden{display:none}
+.ts-toc a.sub{padding-right:22px;font-size:10px;color:var(--dim)}
+.ts-toc a.sub:hover{color:var(--muted)}
+.ts-toc a.sub.active{color:var(--gold)}
+
+.doc-section{padding:24px 0 44px;border-bottom:1px solid var(--line);scroll-margin-top:90px}
+.doc-section:last-child{border-bottom:none}
+.doc-section.hidden{display:none}
+.doc-section h2{font-family:var(--display);font-size:clamp(28px,3vw,42px);letter-spacing:.02em;line-height:1;margin-bottom:18px;color:var(--text)}
+.doc-section h3{font-family:var(--display);font-size:22px;letter-spacing:.03em;margin:32px 0 14px;color:var(--gold2)}
+.doc-section h4{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:24px 0 10px}
+.doc-section p{font-size:14px;color:var(--muted);line-height:1.85;font-weight:300;margin-bottom:14px;max-width:820px}
+.doc-section p strong{color:var(--text);font-weight:500}
+.doc-section ul,.doc-section ol{font-size:14px;color:var(--muted);line-height:1.85;font-weight:300;margin:0 0 14px 22px;max-width:820px}
+.doc-section li{margin-bottom:6px}
+.doc-section a{color:var(--gold);text-decoration:none;border-bottom:1px solid var(--gold-bdr);transition:color .2s,border-color .2s}
+.doc-section a:hover{color:var(--gold2);border-bottom-color:var(--gold)}
+.doc-section code{font-family:var(--mono);font-size:12px;color:var(--gold2);background:var(--dark2);padding:1px 6px;border:1px solid var(--line);letter-spacing:.02em}
+
+/* CODE BLOCKS - sequential before/after */
+.code-block{margin:14px 0 0}
+.code-block .code-hdr{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--line);border-bottom:none;background:var(--dark)}
+.code-block .code-hdr.before{color:#f6a4a4;border-color:rgba(220,80,80,.4)}
+.code-block .code-hdr.after{color:var(--gold2);border-color:var(--gold-bdr)}
+.code-block.before pre[class*="language-"]{border-color:rgba(220,80,80,.4) !important;border-top:none !important;margin:0 0 0 !important}
+.code-block.after pre[class*="language-"]{border-color:var(--gold-bdr) !important;border-top:none !important;margin:0 0 0 !important}
+.code-explain{padding:12px 18px;font-size:13px;color:var(--muted);line-height:1.7;background:var(--dark);border:1px solid var(--line);border-top:none;margin-bottom:24px;max-width:100%}
+.code-explain strong{color:var(--text);font-weight:500}
+.code-explain.after-explain{border-color:var(--gold-bdr)}
+
+/* Prism.js overrides to match site theme */
+pre[class*="language-"],code[class*="language-"]{font-family:var(--mono) !important;font-size:12px !important;text-shadow:none !important;tab-size:2}
+pre[class*="language-"]{background:var(--dark2) !important;border:1px solid var(--line) !important;border-radius:0 !important;padding:18px 20px !important;margin:14px 0 20px !important;line-height:1.65 !important;overflow-x:auto !important}
+code[class*="language-"]{background:none !important;border:none !important;padding:0 !important;color:#abb2bf !important}
+.token.comment,.token.prolog,.token.doctype,.token.cdata{color:#5a657a !important}
+.token.keyword,.token.selector,.token.important,.token.atrule{color:#c792ea !important}
+.token.string,.token.char,.token.attr-value{color:#c3e88d !important}
+.token.number{color:#f0c060 !important}
+.token.boolean,.token.builtin{color:#c792ea !important}
+.token.function{color:#82aaff !important}
+.token.class-name,.token.type-identifier{color:#ffcb6b !important}
+.token.operator,.token.entity{color:#89ddff !important}
+.token.variable,.token.constant{color:#f07178 !important}
+.token.punctuation{color:#abb2bf !important}
+
+.doc-section table{width:100%;max-width:100%;border-collapse:collapse;margin:14px 0 24px;font-size:13px;border:1px solid var(--line)}
+.doc-section table th,.doc-section table td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);border-right:1px solid var(--line);vertical-align:top}
+.doc-section table th:last-child,.doc-section table td:last-child{border-right:none}
+.doc-section table tr:last-child td{border-bottom:none}
+.doc-section table th{font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;background:var(--dark);font-weight:500}
+.doc-section table td{color:var(--muted);font-weight:300;line-height:1.6}
+.doc-section table td code{font-size:11px;color:var(--text);background:var(--dark3)}
+.doc-section table td.gain{color:var(--gold2);font-family:var(--mono);font-weight:500}
+.doc-section table td.loss{color:#f6a4a4;font-family:var(--mono)}
+
+/* INLINE DOC SCREENSHOTS */
+.doc-img{margin:18px 0 28px;max-width:820px}
+.doc-img-wrap{background:var(--dark3);border:1px solid var(--line);overflow:hidden;position:relative;cursor:none;line-height:0}
+.doc-img-wrap img{width:100%;height:auto;display:block;filter:brightness(.92);transition:filter .3s,transform .5s}
+.doc-img-wrap:hover img{filter:brightness(1.08);transform:scale(1.02)}
+.doc-img-wrap .doc-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-family:var(--mono);font-size:10px;color:rgba(236,236,244,.55);letter-spacing:.14em;text-transform:uppercase;background:linear-gradient(135deg,#0a1520,#0d3050);pointer-events:none}
+.doc-img-wrap .doc-ph::before{content:'';width:28px;height:1px;background:var(--gold-bdr)}
+.doc-img-wrap::after{content:'⊕';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;color:rgba(255,255,255,0);transition:color .25s;pointer-events:none}
+.doc-img-wrap:hover::after{color:rgba(255,255,255,.7)}
+.doc-img-wrap .doc-tag{position:absolute;top:10px;left:10px;font-family:var(--mono);font-size:9px;color:#fff;letter-spacing:.14em;text-transform:uppercase;background:rgba(3,3,10,.78);padding:4px 8px;border:1px solid rgba(255,255,255,.15)}
+.doc-img-wrap .doc-tag.before{border-color:rgba(220,80,80,.5);color:#f6a4a4}
+.doc-img-wrap .doc-tag.after{border-color:rgba(212,168,67,.55);color:var(--gold2)}
+.doc-img figcaption{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.08em;margin-top:10px;line-height:1.6}
+.doc-section blockquote{border-left:2px solid var(--gold);background:var(--gold-dim);padding:14px 20px;margin:14px 0 20px;font-size:13px;color:var(--text);line-height:1.7;max-width:820px}
+.doc-section blockquote strong{color:var(--gold2)}
+
+/* Pull-quote callout */
+.callout{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;margin:18px 0 24px;padding:16px 20px;background:var(--dark2);border:1px solid var(--line);border-left:2px solid var(--gold);max-width:820px}
+.callout .callout-tag{font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.14em;text-transform:uppercase;padding-top:2px;white-space:nowrap}
+.callout p{margin:0;color:var(--text);font-size:13px;line-height:1.7}
+
+/* Stat row */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin:14px 0 28px;max-width:820px}
+.stat-cell{background:var(--dark);padding:18px 18px;display:flex;flex-direction:column;gap:5px}
+.stat-cell .stat-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+.stat-cell .stat-val{font-family:var(--display);font-size:24px;color:var(--text);letter-spacing:.02em;line-height:1.05}
+.stat-cell .stat-val.gain{color:var(--gold2)}
+.stat-cell .stat-delta{font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:.06em}
+
+/* BACK TO TOP */
+.back-top{position:fixed;bottom:28px;right:28px;z-index:90;width:46px;height:46px;border:1px solid var(--line2);background:rgba(8,8,15,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;color:var(--muted);letter-spacing:.06em;cursor:none;opacity:0;pointer-events:none;transition:all .25s}
+.back-top.visible{opacity:1;pointer-events:all}
+.back-top:hover{color:var(--gold);border-color:var(--gold-bdr);background:rgba(8,8,15,.95)}
+
+#lightbox{position:fixed;inset:0;z-index:2000;background:rgba(3,3,10,.95);display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .3s}
+#lightbox.open{pointer-events:all;opacity:1}
+.lb-media{max-width:90vw;max-height:85vh;object-fit:contain;display:block}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:11px;color:var(--muted);background:rgba(8,8,15,.7);border:1px solid var(--line);padding:14px 18px;cursor:none;transition:all .2s;letter-spacing:.1em;text-transform:uppercase;user-select:none}
+.lb-nav:hover{color:var(--gold);border-color:var(--gold-bdr)}
+#lb-prev{left:24px}
+#lb-next{right:24px}
+.lb-close{position:absolute;top:20px;right:20px;font-family:var(--mono);font-size:10px;color:var(--muted);background:rgba(8,8,15,.7);border:1px solid var(--line);padding:8px 14px;cursor:none;transition:all .2s;letter-spacing:.1em;text-transform:uppercase}
+.lb-close:hover{color:var(--text);border-color:var(--line2)}
+.lb-counter{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em}
+
+@media(max-width:1100px){
+  .ts-docs-layout{grid-template-columns:minmax(0,1fr) 200px;gap:36px}
+  .ts-hero-grid{grid-template-columns:1fr;gap:40px}
+  .ts-meta-grid{grid-template-columns:repeat(3,1fr)}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .stat-row{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:900px){
+  .wrap{padding:0 24px}
+  .ts-hero{padding:110px 0 60px}
+  .ts-docs-layout{grid-template-columns:1fr;gap:20px}
+  .ts-sidebar{position:relative;top:0;max-height:none;padding:14px 16px;order:-1}
+  .ts-sidebar,.ts-toc,.ts-toc-label,.ts-toc a{text-align:left}
+  .ts-toc a{border-right:none;border-left:2px solid transparent}
+  .ts-toc a:hover{border-left-color:var(--line2)}
+  .ts-toc a.active{border-left-color:var(--gold)}
+  .ts-toc a.sub{padding-left:22px;padding-right:10px}
+  .gal-grid{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:1fr}
+  .ts-meta-grid{grid-template-columns:repeat(2,1fr)}
+  .doc-section table{font-size:12px}
+  .doc-section table th,.doc-section table td{padding:8px 10px}
+  .stat-row{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .ts-meta-grid{grid-template-columns:1fr}
+  .lb-nav{padding:10px 12px;font-size:10px}
+  #lb-prev{left:8px}#lb-next{right:8px}
+}
+</style>
+</head>
+<body>
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+<nav>
+  <a class="nav-logo" href="index.html">Kilian Allaire<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html#work">Work</a></li>
+    <li><a href="index.html#experience">Experience</a></li>
+    <li><a href="index.html#about">About</a></li>
+    <li><a href="index.html#content">Content</a></li>
+    <li><a href="index.html#contact">Contact</a></li>
+  </ul>
+  <a class="nav-hire" href="index.html#work">&larr; Back to portfolio</a>
+</nav>
+
+<section class="ts-hero">
+  <div class="wrap">
+    <div class="ts-back"><a href="index.html#work">&larr; All projects</a></div>
+    <div class="ts-hero-grid">
+      <div class="reveal">
+        <div class="sec-label">Technical Mission &middot; Gambas Studio &middot; 2026</div>
+        <h1 class="ts-title">PAINT GPU<br>OPTIMIZATION</h1>
+        <div class="ts-subtitle">Diagnosing and fixing a paint-on-texture system that stalled the GPU for 15&nbsp;ms per frame on Unity / D3D12.</div>
+        <div class="ts-desc">A real-time tactical board for the <strong>Timeline</strong> rugby coaching app at <a href="https://www.linkedin.com/company/gambas-studio/" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;border-bottom:1px solid var(--gold-bdr)">Gambas Studio</a>. Frames lived above 30&nbsp;ms with severe spikes. After profiling, the bottleneck was 200+ separate GPU submissions per frame. Four targeted fixes brought the frame down to <strong>7.55&nbsp;ms stable (133&nbsp;fps)</strong> with no visual regression.</div>
+        <div class="ts-tags">
+          <span class="wtag wtag-e">Unity</span>
+          <span class="wtag wtag-g">GPU</span>
+          <span class="wtag wtag-v">Optimization</span>
+          <span class="wtag wtag-p">C#</span>
+          <span class="wtag wtag-s">HLSL</span>
+        </div>
+        <div class="ts-ctas">
+          <a class="btn-gold" href="#solutions">See the fixes &rarr;</a>
+          <a class="btn-outline" href="#results">Jump to results</a>
+        </div>
+      </div>
+      <div class="reveal d1">
+        <div class="ts-hero-visual" data-media="img/paint-optim/post-rendu.png">
+          <img src="img/paint-optim/post-rendu.png" alt="Paint-on-texture tactical board running at 133 fps after optimization"/>
+          <div class="doc-ph">After &middot; 133 fps stable</div>
+          <span class="ts-hero-cap">Final result &middot; 7.55 ms / frame</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="ts-meta">
+  <div class="wrap">
+    <div class="ts-meta-grid">
+      <div class="ts-meta-cell"><span class="ts-meta-lbl">Engine</span><span class="ts-meta-val">Unity 6000.3.6f1</span></div>
+      <div class="ts-meta-cell"><span class="ts-meta-lbl">Pipeline</span><span class="ts-meta-val">Universal RP</span></div>
+      <div class="ts-meta-cell"><span class="ts-meta-lbl">Graphics API</span><span class="ts-meta-val">Direct3D 12</span></div>
+      <div class="ts-meta-cell"><span class="ts-meta-lbl">Languages</span><span class="ts-meta-val">C# &middot; HLSL</span></div>
+      <div class="ts-meta-cell"><span class="ts-meta-lbl">Outcome</span><span class="ts-meta-val gold">+165% FPS</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="ts-features">
+  <div class="wrap">
+    <div class="sec-label">At a glance</div>
+    <h2 class="ts-features-title">RESULTS HEADLINE</h2>
+    <div class="kpi-grid">
+      <a class="kpi-card" href="#results">
+        <div class="kpi-lbl">CPU main thread</div>
+        <div class="kpi-val">19.93 &rarr; <span class="gain">13.18 ms</span></div>
+        <div class="kpi-sub">Per-frame CPU cost during paint, measured in editor profiler.</div>
+        <div class="kpi-arrow">-34% main thread</div>
+      </a>
+      <a class="kpi-card" href="#diagnostic">
+        <div class="kpi-lbl">DXGI WaitOnSwapChain</div>
+        <div class="kpi-val">15.66 &rarr; <span class="gain">4.16 ms</span></div>
+        <div class="kpi-sub">Time the CPU spent blocked on the GPU finishing the previous frame.</div>
+        <div class="kpi-arrow">-73% GPU stall</div>
+      </a>
+      <a class="kpi-card" href="#results">
+        <div class="kpi-lbl">Build frame time</div>
+        <div class="kpi-val">20+ &rarr; <span class="gain">7.55 ms</span></div>
+        <div class="kpi-sub">Stable 133 fps in standalone build, no spikes during continuous brush input.</div>
+        <div class="kpi-arrow">133 fps stable</div>
+      </a>
+      <a class="kpi-card" href="#fix-batch">
+        <div class="kpi-lbl">GPU command submits</div>
+        <div class="kpi-val">200 &rarr; <span class="gain">30 / frame</span></div>
+        <div class="kpi-sub">From 100 draw + 100 copy per frame to a single batched command list per stamp.</div>
+        <div class="kpi-arrow">-85% submits</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="ts-gallery">
+  <div class="wrap">
+    <div class="sec-label">Before / After</div>
+    <h2 class="ts-gal-title">PROFILER CAPTURES</h2>
+    <div class="gal-grid">
+      <div class="gal-item" data-media="img/paint-optim/baseline-timeline.png"><img src="img/paint-optim/baseline-timeline.png" alt="Profiler timeline before optimization showing long DXGI waits"/><div class="gal-ph">Baseline timeline</div><div class="gal-tag before">Before</div></div>
+      <div class="gal-item" data-media="img/paint-optim/post-timeline.png"><img src="img/paint-optim/post-timeline.png" alt="Profiler timeline after optimization, DXGI wait collapsed"/><div class="gal-ph">Optimized timeline</div><div class="gal-tag after">After</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="ts-docs" id="documentation">
+  <div class="wrap">
+    <div class="ts-docs-head reveal">
+      <div class="sec-label">Walkthrough</div>
+      <h2 class="ts-docs-title">CASE STUDY</h2>
+      <p class="ts-docs-sub">A focused write-up of the diagnosis, the four fixes that mattered, and the measured before/after. Use the search to jump to a specific concept (e.g. <code>CommandBuffer</code>, <code>DXGI</code>).</p>
+    </div>
+    <div class="ts-docs-layout">
+      <div class="ts-content">
+
+        <article class="doc-section" data-id="context" id="context">
+          <h2>Context</h2>
+          <p><strong>Timeline</strong> is a tactical animation tool for rugby XV staff: coaches build, replay and annotate plays on a virtual pitch. The paint module lets the user draw freehand on the field surface in real time, with a brush that follows the mouse cursor and writes into a texture mapped to the ground mesh.</p>
+          <p>The system works by stamping the brush shape at successive positions along the cursor path. Each stamp is rendered using a <strong>custom paint shader</strong> and a Unity <strong>CommandBuffer</strong> (a recorded list of GPU commands). A coroutine interpolates between consecutive mouse positions to draw a continuous stroke even when the cursor moves fast.</p>
+          <div class="doc-img">
+            <div class="doc-img-wrap" data-media="img/paint-optim/profiler-timeline-shape.png">
+              <img src="img/paint-optim/profiler-timeline-shape.png" alt="Profiler timeline showing the paint system cost"/>
+              <div class="doc-ph">Profiler timeline &middot; baseline</div>
+            </div>
+            <figcaption>Profiler timeline during a stroke, showing the main thread parked on <code>WaitOnSwapChain</code>.</figcaption>
+          </div>
+        </article>
+
+        <article class="doc-section" data-id="problem" id="problem">
+          <h2>The Problem</h2>
+          <p>The visible symptom was straightforward: <strong>painting felt heavy</strong>. Frame time during continuous strokes climbed past 30&nbsp;ms, the brush trail visibly lagged behind the cursor, and the editor preview stuttered. The build behaved the same way, so it was not an editor-only artifact.</p>
+
+          <div class="doc-img">
+            <div class="doc-img-wrap" data-media="img/paint-optim/baseline-rendu.png">
+              <img src="img/paint-optim/baseline-rendu.png" alt="Baseline build with developer console showing up to 100 paint calls per frame"/>
+              <div class="doc-ph">Baseline build &middot; console during stroke</div>
+              <div class="doc-tag before">Before</div>
+            </div>
+            <figcaption>Baseline build &middot; the developer console confirms up to 100 paint calls per frame during a stroke. Visible cursor lag.</figcaption>
+          </div>
+
+          <p>The Profiler in <em>Hierarchy</em> view confirmed where the time was spent: nearly every frame inside <code>PlayerLoop</code> was dominated by a single deep <code>Camera.Render</code> branch, with two cells that together accounted for almost the entire CPU frame:</p>
+
+          <div class="stat-row">
+            <div class="stat-cell"><span class="stat-lbl">CPU main</span><span class="stat-val">19.93 ms</span><span class="stat-delta">total</span></div>
+            <div class="stat-cell"><span class="stat-lbl">DXGI Wait</span><span class="stat-val" style="color:#f6a4a4">15.66 ms</span><span class="stat-delta">78% of frame</span></div>
+            <div class="stat-cell"><span class="stat-lbl">Paint loop</span><span class="stat-val">~3.8 ms</span><span class="stat-delta">CPU only</span></div>
+            <div class="stat-cell"><span class="stat-lbl">Throughput</span><span class="stat-val" style="color:#f6a4a4">~50 fps</span><span class="stat-delta">unstable</span></div>
+          </div>
+
+          <div class="doc-img">
+            <div class="doc-img-wrap" data-media="img/paint-optim/baseline-hierarchy.png">
+              <img src="img/paint-optim/baseline-hierarchy.png" alt="Unity profiler hierarchy showing 15.66ms in Gfx.WaitForGPU"/>
+              <div class="doc-ph">Profiler hierarchy &middot; baseline</div>
+              <div class="doc-tag before">Before</div>
+            </div>
+            <figcaption>Profiler hierarchy &middot; <code>Gfx.PresentFrame</code> &rarr; <code>WaitOnSwapChain</code> burning 15.66&nbsp;ms.</figcaption>
+          </div>
+
+          <blockquote><strong>WaitOnSwapChain at 15.66&nbsp;ms is not "the renderer is slow", it's the CPU sitting idle, waiting for the GPU to finish the previous frame before swapping the buffers. That signature points to a GPU stall: too many submissions, blocking readbacks, or a memory hazard the driver is forced to serialize.</blockquote>
+        </article>
+
+        <article class="doc-section" data-id="diagnostic" id="diagnostic">
+          <h2>Diagnosis</h2>
+          <p>The hierarchy already told me the CPU was waiting on the GPU. To find <em>why</em>, I switched the Profiler to <em>Timeline</em> view.</p>
+
+          <h3>Timeline view &middot; the shape of the wait</h3>
+          <div class="doc-img">
+            <div class="doc-img-wrap" data-media="img/paint-optim/profiler-timeline-shape.png">
+              <img src="img/paint-optim/profiler-timeline-shape.png" alt="Profiler timeline view showing CPU blocked on DXGI for most of the frame"/>
+              <div class="doc-ph">Profiler timeline &middot; baseline</div>
+              <div class="doc-tag before">Before</div>
+            </div>
+            <figcaption>The main thread (bottom) is parked on <code>WaitOnSwapChain</code> for most of the frame while the render thread (top) does short bursts of submission.</figcaption>
+          </div>
+          <p>The timeline confirmed the diagnosis: the GPU could not overlap rendering of frame <em>N</em> with simulation of frame <em>N+1</em>. Classic serialized-submit shape.</p>
+
+          <h3>Root cause &middot; what was actually happening</h3>
+          <p>Looking at the paint code against the profiler captures, the picture became clear. For every brush stamp, the system issued <strong>two separate GPU command submissions</strong> in sequence:</p>
+          <ol>
+            <li>A <code>CommandBuffer</code> was filled with a draw call writing the brush into the paint texture, then immediately flushed to the GPU.</li>
+            <li>A standalone copy operation was issued right after, sending another command to the GPU on a separate command list.</li>
+          </ol>
+          <p>The brush coroutine could fire <strong>up to 100 stamps per frame</strong> when the cursor moved fast. That meant <strong>up to 200 separate GPU submissions per frame</strong>, with each pair having a read-after-write dependency the driver had to serialize. The result: command queue saturation, no CPU/GPU pipelining, and a 15&nbsp;ms <code>WaitOnSwapChain</code> every frame.</p>
+
+          <div class="callout">
+            <span class="callout-tag">Insight</span>
+            <p>The CPU work itself was cheap. The cost was the <em>shape</em> of the work: many small dependent submissions on a large texture. Fixing the shape, not the work, is what unlocked the GPU.</p>
+          </div>
+
+          <h3>Hypotheses tested &middot; in order</h3>
+          <table>
+            <thead><tr><th>Hypothesis</th><th>Verdict</th><th>Reasoning</th></tr></thead>
+            <tbody>
+              <tr><td>Shader is too heavy</td><td class="loss">Rejected</td><td>Each stamp covers a small screen-space area. GPU time per stamp is sub-millisecond. The cost is per-call overhead, not per-pixel work.</td></tr>
+              <tr><td>Texture format too large</td><td class="loss">Rejected</td><td>Tested lighter formats. Saved bandwidth but did not move the needle, the bottleneck was submit count.</td></tr>
+              <tr><td>Coroutine fires too often</td><td class="gain">Partially</td><td>100 stamps/frame is a real upper bound, but capping it alone did not eliminate the wait.</td></tr>
+              <tr><td>Each stamp issues 2 separate submissions with dependency</td><td class="gain">Confirmed</td><td>Profiler timeline shows two events per stamp on the same texture. Driver must drain between them.</td></tr>
+              <tr><td>Float-precision degenerate stamps</td><td class="gain">Confirmed</td><td>When the mouse barely moves, the interpolation still runs and emits stamps with near-zero distance. Pure waste.</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="doc-section" data-id="approach" id="approach">
+          <h2>Approach</h2>
+          <p>With the root causes identified, four fixes were applied in order, each measured independently before keeping it. The principle was the same throughout: <strong>reduce the number of dependent GPU submissions per frame, without touching shader output</strong>. No visual regression was acceptable.</p>
+          <ol>
+            <li><strong>Batch the per-stamp work into a single CommandBuffer, biggest win, addresses the shape of the problem directly.</li>
+            <li><strong>Cap stamps per frame at 30, eliminates the worst input bursts without affecting visual smoothness.</li>
+            <li><strong>Float-precision guard, reject degenerate line segments before they reach the GPU.</li>
+            <li><strong>Keep ARGB32, do not downgrade format, profiling showed the bandwidth saving was not worth the quality loss.</li>
+          </ol>
+        </article>
+
+        <article class="doc-section" data-id="solutions" id="solutions">
+          <h2>Solutions</h2>
+          <p>Each fix below shows the before code with the problem highlighted, the reason it causes the issue, then the corrected version and why it works.</p>
+        </article>
+
+        <article class="doc-section" data-id="fix-batch" id="fix-batch">
+          <h2>Fix 1: Batch DrawRenderer and Blit in a single CommandBuffer</h2>
+          <p><strong>The dominant fix.</strong> The original <code>Paint()</code> emitted two separate GPU submissions per stamp: one to draw the brush onto the paint texture, then a standalone copy to propagate the result. With up to 100 stamps per frame, this produced 200 dependent submissions the driver had to serialize.</p>
+
+          <div class="code-block before">
+            <div class="code-hdr before">Before &middot; PaintManager.cs</div>
+<pre><code class="language-csharp">internal void Paint(Paintable p, Vector3 pos, ...)
+{
+    RenderTexture mask    = p.MaskRenderTexture;
+    RenderTexture support = p.SupportRenderTexture;
+
+    MaterialInstance.SetTexture(TEXTURE_ID, support);
+    MaterialInstance.SetVector(POSITION_ID, pos);
+    // ... other SetXxx ...
+
+    CommandBuffer.SetRenderTarget(mask);
+    CommandBuffer.DrawRenderer(p.Renderer, MaterialInstance, 0);
+    Graphics.ExecuteCommandBuffer(CommandBuffer); // 1st GPU submission
+    CommandBuffer.Clear();
+
+    Graphics.Blit(mask, support); // 2nd GPU submission, separate command list
+}</code></pre>
+          </div>
+          <div class="code-explain">
+            <strong>Why this is a problem:</strong> <code>Graphics.ExecuteCommandBuffer</code> and <code>Graphics.Blit</code> each flush a separate command list to the GPU. The second one reads from the texture the first one just wrote to, so the driver inserts an explicit synchronization point between them. With 100 stamps per frame, that is 200 submissions and 100 forced serialization points every frame.
+          </div>
+
+          <div class="code-block after">
+            <div class="code-hdr after">After &middot; PaintManager.cs</div>
+<pre><code class="language-csharp">internal void Paint(Paintable p, Vector3 pos,
+                    Color color, float radius, float hardness)
+{
+    RenderTexture mask    = p.MaskRenderTexture;
+    RenderTexture support = p.SupportRenderTexture;
+    Renderer renderer     = p.Renderer;
+
+    MaterialInstance.SetTexture(TEXTURE_ID, support);
+    MaterialInstance.SetVector(POSITION_ID, pos);
+    MaterialInstance.SetFloat(RADIUS_ID, radius);
+    MaterialInstance.SetFloat(HARDNESS_ID, hardness);
+    MaterialInstance.SetFloat(STRENGTH_ID, ConstantsPaint.TRANSPARENCY);
+    MaterialInstance.SetColor(PAINTER_COLOR_ID, color);
+
+    CommandBuffer.SetRenderTarget(mask);
+    CommandBuffer.DrawRenderer(renderer, MaterialInstance, 0);
+    CommandBuffer.Blit(mask, support); // recorded into the same command list
+
+    Graphics.ExecuteCommandBuffer(CommandBuffer); // single submission per stamp
+    CommandBuffer.Clear();
+}</code></pre>
+          </div>
+          <div class="code-explain after-explain">
+            <strong>Why this works:</strong> Both operations are now recorded into the same <code>CommandBuffer</code> before it is submitted. The GPU receives a single coherent command list per stamp and can resolve the read-after-write internally, without needing a CPU-side synchronization point between the draw and the copy. Sequential execution across stamps is still required (each stamp reads what the previous one wrote), but that dependency is now within a single submission rather than between two.
+          </div>
+
+          <div class="stat-row">
+            <div class="stat-cell"><span class="stat-lbl">Submits / frame</span><span class="stat-val gain">200 &rarr; 60</span><span class="stat-delta">-70% from this fix alone</span></div>
+            <div class="stat-cell"><span class="stat-lbl">DXGI Wait</span><span class="stat-val gain">15.66 &rarr; ~5 ms</span><span class="stat-delta">isolated measurement</span></div>
+            <div class="stat-cell"><span class="stat-lbl">CPU main</span><span class="stat-val gain">-4 ms</span><span class="stat-delta">less unblock time</span></div>
+            <div class="stat-cell"><span class="stat-lbl">Visual diff</span><span class="stat-val gain">0</span><span class="stat-delta">bit-identical</span></div>
+          </div>
+        </article>
+
+        <article class="doc-section" data-id="fix-cap" id="fix-cap">
+          <h2>Fix 2: ITERATION_PER_FRAME 100 &rarr; 30</h2>
+          <p>The brush system interpolates between two consecutive cursor positions to draw a continuous stroke. The interpolation step is fixed (0.1 world units), so a fast mouse motion can produce dozens of stamps in a single frame.</p>
+          <p>The original code yielded back to Unity every <strong>100 stamps</strong>, which capped the per-frame budget but was too lenient: the user was generating up to 100 stamps per frame during normal painting, hitting the cap on every frame. Lowering the cap to <strong>30</strong> stamps before yielding spreads the work across several frames at the cost of at most one extra frame of latency, invisible to the user.</p>
+
+          <div class="code-block before">
+            <div class="code-hdr before">Before &middot; Constants.cs</div>
+<pre><code class="language-csharp">public const int ITERATION_PER_FRAME = 100;</code></pre>
+          </div>
+          <div class="code-explain">
+            <strong>Why this is a problem:</strong> A limit of 100 stamps per frame allows worst-case bursts to reach the GPU in a single frame. Combined with the 2 submissions per stamp (before Fix 1), the queue could receive 200 command lists in one frame.
+          </div>
+
+          <div class="code-block after">
+            <div class="code-hdr after">After &middot; Constants.cs</div>
+<pre><code class="language-csharp">public const int ITERATION_PER_FRAME = 30;</code></pre>
+          </div>
+          <div class="code-explain after-explain">
+            <strong>Why this works:</strong> Capping at 30 stamps limits the worst-case GPU workload per frame. The remaining stamps are deferred to the next frame. Combined with Fix 1, peak submissions dropped from up to 200 per frame to around 30, a range where the GPU keeps up without stalling the CPU on <code>WaitOnSwapChain</code>.
+          </div>
+
+          <div class="callout">
+            <span class="callout-tag">Trade-off</span>
+            <p>The cap adds at most one frame of latency on extreme cursor velocity. Tested on tablet input: no perceived lag, no visible break in the stroke.</p>
+          </div>
+        </article>
+
+        <article class="doc-section" data-id="fix-precision" id="fix-precision">
+          <h2>Fix 3: Float-precision guard</h2>
+          <p>The interpolation routine builds a list of stamp positions along a line segment between two cursor samples. When the cursor barely moves, the distance between the two samples can be extremely small due to floating-point noise. The original code had no check for this: it would still run the loop and submit stamps for what is effectively a zero-length segment, paying the full GPU cost for an invisible result.</p>
+
+          <div class="code-block before">
+            <div class="code-hdr before">Before &middot; ToolPaint.cs</div>
+<pre><code class="language-csharp">private IEnumerator PaintBetweenPoints(
+    Paintable p, Vector3 from, Vector3 to, ...)
+{
+    Vector3 dir = to - from;
+    float length = dir.magnitude;
+    dir = dir.normalized; // dangerous if length is near 0 (NaN direction)
+
+    // No minimum-distance check: runs even when from == to
+    for (float i = 0; i &lt; length; i += m_stampSpacing)
+    {
+        m_paintManager.Paint(p, from + dir * i, ...);
+        // ... yield every N ...
+    }
+    m_paintManager.Paint(p, to, ...);
+}</code></pre>
+          </div>
+          <div class="code-explain">
+            <strong>Why this is a problem:</strong> If <code>length</code> is near zero, dividing by it to normalize the direction produces a NaN vector. The loop still runs and emits stamps, sending invalid draw calls to the GPU. This wastes GPU submissions and can produce undefined rendering results.
+          </div>
+
+          <div class="code-block after">
+            <div class="code-hdr after">After &middot; ToolPaint.cs</div>
+<pre><code class="language-csharp">private IEnumerator PaintBetweenPoints(
+    Paintable p, Vector3 from, Vector3 to, ...)
+{
+    Vector3 dir = to - from;
+    float length = dir.magnitude;
+
+    if (length &lt; 0.001f)
+        yield break; // skip if positions are essentially identical
+
+    dir = dir.normalized;
+    for (float i = 0; i &lt; length; i += m_stampSpacing)
+    {
+        m_paintManager.Paint(p, from + dir * i, ...);
+        // ... yield every N ...
+    }
+    m_paintManager.Paint(p, to, ...);
+}</code></pre>
+          </div>
+          <div class="code-explain after-explain">
+            <strong>Why this works:</strong> The early return skips the entire stamp sequence when the two cursor samples are too close to produce a visible result. This removes a class of wasted GPU submissions that occurred whenever the user held the mouse still, and also prevents the NaN direction vector that would otherwise be passed to the shader.
+          </div>
+        </article>
+
+
+        <article class="doc-section" data-id="results" id="results">
+          <h2>Results</h2>
+          <p>Numbers below were captured on the same scene, same input pattern (continuous brush stroke for 5 seconds), same hardware, in standalone build.</p>
+
+          <h3>CPU and GPU sync</h3>
+          <table>
+            <thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Delta</th></tr></thead>
+            <tbody>
+              <tr><td>CPU main thread</td><td>19.93 ms</td><td>13.18 ms</td><td class="gain">-6.75 ms (-34%)</td></tr>
+              <tr><td>DXGI WaitOnSwapChain</td><td>15.66 ms</td><td>4.16 ms</td><td class="gain">-11.50 ms (-73%)</td></tr>
+              <tr><td>Build frame time</td><td>~20+ ms (spiky)</td><td>7.55 ms (stable)</td><td class="gain">-62% &middot; +165% fps</td></tr>
+              <tr><td>GPU submits / frame (peak)</td><td>~200</td><td>~30</td><td class="gain">-85%</td></tr>
+              <tr><td>FPS (build)</td><td>~50, unstable</td><td>133, stable</td><td class="gain">+165%</td></tr>
+            </tbody>
+          </table>
+
+          <h3>Profiler captures &middot; after</h3>
+          <div class="doc-img">
+            <div class="doc-img-wrap" data-media="img/paint-optim/post-hierarchy.png">
+              <img src="img/paint-optim/post-hierarchy.png" alt="Profiler hierarchy after optimization showing 13.18ms CPU"/>
+              <div class="doc-ph">Profiler hierarchy &middot; after</div>
+              <div class="doc-tag after">After</div>
+            </div>
+            <figcaption><code>Gfx.PresentFrame</code> &rarr; <code>WaitOnSwapChain</code> dropped from 15.66&nbsp;ms to 4.16&nbsp;ms.</figcaption>
+          </div>
+          <div class="doc-img">
+            <div class="doc-img-wrap" data-media="img/paint-optim/post-timeline.png">
+              <img src="img/paint-optim/post-timeline.png" alt="Profiler timeline after optimization, main thread productive"/>
+              <div class="doc-ph">Profiler timeline &middot; after</div>
+              <div class="doc-tag after">After</div>
+            </div>
+            <figcaption>Timeline view &middot; main thread no longer parked. Render thread overlapping cleanly with simulation.</figcaption>
+          </div>
+          <div class="doc-img">
+            <div class="doc-img-wrap" data-media="img/paint-optim/final-rendu.png">
+              <img src="img/paint-optim/final-rendu.png" alt="Final build at 133 fps stable during paint"/>
+              <div class="doc-ph">Final build &middot; 133 fps stable</div>
+              <div class="doc-tag after">After</div>
+            </div>
+            <figcaption>Final build &middot; 133&nbsp;fps stable during continuous painting. Cursor lag gone.</figcaption>
+          </div>
+        </article>
+
+        <article class="doc-section" data-id="conclusion" id="conclusion">
+          <h2>Conclusion</h2>
+          <p>The whole investigation is a clean illustration of a principle worth restating: <strong>on modern GPUs, the cost of a render operation is rarely what you write, it's how the driver sees it</strong>. The shader was fine, the texture was fine, the algorithm was fine. The submission pattern was not, and that single dimension of the system explained 14&nbsp;ms of lost frame time.</p>
+
+          <h3>What I'd do the same way again</h3>
+          <ul>
+            <li><strong>Read the profiler before touching the code.</strong> The <code>WaitOnSwapChain</code> signature pointed at the family of root causes within the first minute. Anything I'd done before reading it would have been guessing.</li>
+            <li><strong>Reject hypotheses, even tempting ones.</strong> Format downgrade looked free. It wasn't worth it. Profiling each candidate fix in isolation kept the final patch surgical.</li>
+          </ul>
+
+          <h3>What I'd do differently</h3>
+          <ul>
+            <li><strong>Add a profiler marker around the paint call from day one.</strong> There was no named scope on the brush path. A 30-second addition would have shortened the diagnosis by half.</li>
+            <li><strong>Fold standalone copy operations into the surrounding command list.</strong> <code>Graphics.Blit</code> is convenient but always flushes a new command list immediately. On any per-frame loop where a <code>CommandBuffer</code> is already open, that copy belongs inside the same buffer, not after it.</li>
+          </ul>
+
+          <h3>Takeaways</h3>
+          <ol>
+            <li>WaitOnSwapChain above 5&nbsp;ms: look at submit count, not at shader cost.</li>
+            <li>Two GPU operations that read each other's output should always live in the same <code>CommandBuffer</code>.</li>
+            <li>Float-precision guards on input-driven code paths cost nothing and remove a class of bugs.</li>
+            <li>Format optimization is a last resort, not a first instinct.</li>
+          </ol>
+
+          <p style="margin-top:24px"><strong>Project:</strong> Timeline &middot; Gambas Studio Application &middot; Unity 6 &middot; URP &middot; D3D12 &middot; 2026.</p>
+        </article>
+
+      </div>
+      <aside class="ts-sidebar" id="ts-sidebar">
+        <div class="ts-search-wrap">
+          <span class="ts-search-ico">&#x2315;</span>
+          <input id="doc-search" type="search" placeholder="Search the case study..." autocomplete="off" spellcheck="false"/>
+          <button class="ts-search-clear" id="doc-search-clear" type="button">&#x2715;</button>
+          <div class="ts-search-count" id="doc-search-count"></div>
+        </div>
+        <div class="ts-toc-label">On this page</div>
+        <nav class="ts-toc" id="ts-toc"></nav>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<button class="back-top" id="back-top" type="button" title="Back to top">&uarr;</button>
+
+<footer>
+  <span>&copy; 2026 KILIAN ALLAIRE</span>
+  <span>PAINT GPU OPTIMIZATION &middot; UNITY CASE STUDY</span>
+  <span>BORDEAUX, FRANCE</span>
+</footer>
+
+<div id="lightbox">
+  <button class="lb-close" id="lb-close">Close &#x2715;</button>
+  <button class="lb-nav" id="lb-prev">&larr; Prev</button>
+  <img class="lb-media" id="lb-img" src="" alt="" style="display:none"/>
+  <video class="lb-media" id="lb-video" autoplay loop muted playsinline style="display:none"></video>
+  <button class="lb-nav" id="lb-next">Next &rarr;</button>
+  <div class="lb-counter" id="lb-counter"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+<script>
+/* Custom cursor (desktop only) */
+const isTouchDevice=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
+const cur=document.getElementById('cursor'),ring=document.getElementById('cursor-ring');
+if(isTouchDevice){cur.style.display='none';ring.style.display='none';}
+else{
+  let mx=0,my=0,rx=0,ry=0;
+  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});
+  (function loop(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(loop)})();
+  document.querySelectorAll('a,button,input,.gal-item,.lb-nav,.ts-toc a,.doc-img-wrap,.ts-hero-visual,.kpi-card').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{ring.style.width='44px';ring.style.height='44px';ring.style.borderColor='rgba(212,168,67,.65)'});
+    el.addEventListener('mouseleave',()=>{ring.style.width='30px';ring.style.height='30px';ring.style.borderColor='rgba(212,168,67,.35)'});
+  });
+}
+
+/* Hero visual */
+(function(){
+  const wrap=document.querySelector('.ts-hero-visual');
+  if(!wrap)return;
+  const img=wrap.querySelector('img');
+  const ph=wrap.querySelector('.doc-ph');
+  if(img){
+    const hide=()=>{if(ph)ph.style.display='none';};
+    if(img.complete&&img.naturalWidth)hide();
+    else{img.addEventListener('load',hide);img.addEventListener('error',()=>{img.style.display='none';});}
+  }
+  wrap.addEventListener('click',()=>{
+    const src=wrap.dataset.media;
+    if(src)openLightbox([src],0);
+  });
+})();
+
+/* Gallery images */
+document.querySelectorAll('.gal-item img').forEach(img=>{
+  img.addEventListener('error',()=>{img.style.display='none';});
+  img.addEventListener('load',()=>{const ph=img.parentElement.querySelector('.gal-ph');if(ph)ph.style.display='none';});
+});
+
+/* Inline doc images */
+document.querySelectorAll('.doc-img-wrap').forEach(wrap=>{
+  const img=wrap.querySelector('img');
+  if(img){
+    const ph=wrap.querySelector('.doc-ph');
+    const hide=()=>{if(ph)ph.style.display='none';};
+    if(img.complete&&img.naturalWidth)hide();
+    else{img.addEventListener('load',hide);img.addEventListener('error',()=>{img.style.display='none';});}
+  }
+  wrap.addEventListener('click',()=>{
+    const src=wrap.dataset.media;
+    if(src)openLightbox([src],0);
+  });
+});
+
+/* Build TOC from doc sections */
+const tocEl=document.getElementById('ts-toc');
+const allSections=[...document.querySelectorAll('.doc-section')];
+const subIds=new Set(['fix-batch','fix-cap','fix-precision']);
+const fixHeaderAdded={done:false};
+allSections.forEach(sec=>{
+  const id=sec.dataset.id;
+  const h2=sec.querySelector('h2');
+  if(!h2)return;
+  if(subIds.has(id)&&!fixHeaderAdded.done){
+    const hdr=document.createElement('div');
+    hdr.className='ts-toc-label';
+    hdr.style.marginTop='18px';
+    hdr.textContent='Fixes applied';
+    tocEl.appendChild(hdr);
+    fixHeaderAdded.done=true;
+  }
+  const a=document.createElement('a');
+  a.href='#'+id;
+  a.textContent=h2.textContent;
+  a.dataset.target=id;
+  if(subIds.has(id))a.classList.add('sub');
+  tocEl.appendChild(a);
+});
+
+/* TOC: smooth scroll + active state */
+const tocLinks=[...tocEl.querySelectorAll('a')];
+tocLinks.forEach(l=>l.addEventListener('click',e=>{
+  e.preventDefault();
+  const t=document.querySelector('[data-id="'+l.dataset.target+'"]');
+  if(t){window.scrollTo({top:t.getBoundingClientRect().top+window.pageYOffset-80,behavior:'smooth'});history.replaceState(null,'','#'+l.dataset.target);}
+}));
+const tocObs=new IntersectionObserver(entries=>{
+  entries.forEach(en=>{
+    if(en.isIntersecting){
+      tocLinks.forEach(l=>l.classList.toggle('active',l.dataset.target===en.target.dataset.id));
+    }
+  });
+},{rootMargin:'-80px 0px -70% 0px'});
+allSections.forEach(s=>tocObs.observe(s));
+
+/* Search */
+const searchInput=document.getElementById('doc-search');
+const searchClear=document.getElementById('doc-search-clear');
+const searchCount=document.getElementById('doc-search-count');
+const sectionData=allSections.map(s=>({el:s,text:s.textContent.toLowerCase(),id:s.dataset.id}));
+
+function removeHighlights(){
+  document.querySelectorAll('.doc-section mark.sh').forEach(mk=>{
+    const parent=mk.parentNode;
+    parent.replaceChild(document.createTextNode(mk.textContent),mk);
+    parent.normalize();
+  });
+}
+function highlightIn(root,q){
+  if(!q)return;
+  const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{
+    acceptNode:n=>{
+      const p=n.parentElement;
+      if(!p||!n.nodeValue)return NodeFilter.FILTER_REJECT;
+      if(['SCRIPT','STYLE','MARK'].indexOf(p.tagName)>-1)return NodeFilter.FILTER_REJECT;
+      return re.test(n.nodeValue)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;
+    }
+  });
+  const targets=[];let t;while(t=walker.nextNode())targets.push(t);
+  targets.forEach(tn=>{
+    re.lastIndex=0;
+    const txt=tn.nodeValue;
+    const frag=document.createDocumentFragment();
+    let last=0,m;
+    while((m=re.exec(txt))){
+      if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      const mk=document.createElement('mark');
+      mk.className='sh';
+      mk.textContent=m[0];
+      frag.appendChild(mk);
+      last=m.index+m[0].length;
+      if(m.index===re.lastIndex)re.lastIndex++;
+    }
+    if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));
+    tn.parentNode.replaceChild(frag,tn);
+  });
+}
+
+function runSearch(){
+  removeHighlights();
+  const raw=searchInput.value.trim();
+  const q=raw.toLowerCase();
+  if(!q){
+    sectionData.forEach(s=>s.el.classList.remove('hidden'));
+    tocLinks.forEach(l=>l.classList.remove('hidden'));
+    searchClear.classList.remove('visible');
+    searchCount.classList.remove('visible');
+    return;
+  }
+  searchClear.classList.add('visible');
+  let hits=0;
+  const matched=new Set();
+  sectionData.forEach(s=>{
+    const ok=s.text.includes(q);
+    s.el.classList.toggle('hidden',!ok);
+    if(ok){hits++;matched.add(s.id);highlightIn(s.el,raw);}
+  });
+  tocLinks.forEach(l=>l.classList.toggle('hidden',!matched.has(l.dataset.target)));
+  searchCount.textContent=hits+' section'+(hits!==1?'s':'')+' matched';
+  searchCount.classList.add('visible');
+}
+searchInput.addEventListener('input',runSearch);
+searchClear.addEventListener('click',()=>{searchInput.value='';runSearch();searchInput.focus();});
+document.addEventListener('keydown',e=>{
+  if(e.key==='/'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){
+    e.preventDefault();searchInput.focus();
+  }
+  if(e.key==='Escape'){
+    if(document.getElementById('lightbox').classList.contains('open'))closeLightbox();
+    else if(document.activeElement===searchInput){searchInput.value='';runSearch();searchInput.blur();}
+  }
+  if(e.key==='ArrowLeft')lbNav(-1);
+  if(e.key==='ArrowRight')lbNav(1);
+});
+
+/* Smooth scroll for KPI cards */
+document.querySelectorAll('.kpi-card[href^="#"], a[href^="#"]:not(.ts-toc a)').forEach(card=>{
+  card.addEventListener('click',e=>{
+    const href=card.getAttribute('href');
+    if(!href||href==='#')return;
+    const id=href.slice(1);
+    const t=document.querySelector('[data-id="'+id+'"]')||document.getElementById(id);
+    if(t){
+      e.preventDefault();
+      window.scrollTo({top:t.getBoundingClientRect().top+window.pageYOffset-80,behavior:'smooth'});
+      history.replaceState(null,'','#'+id);
+    }
+  });
+});
+
+/* Back to top */
+const backTop=document.getElementById('back-top');
+window.addEventListener('scroll',()=>{
+  backTop.classList.toggle('visible',window.scrollY>600);
+},{passive:true});
+backTop.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+
+/* Lightbox */
+let lbItems=[],lbIdx=0;
+const lb=document.getElementById('lightbox'),lbImg=document.getElementById('lb-img'),lbVid=document.getElementById('lb-video'),lbCounter=document.getElementById('lb-counter');
+function openLightbox(items,idx){lbItems=items;lbIdx=idx;lb.classList.add('open');document.body.style.overflow='hidden';renderLb()}
+function closeLightbox(){lb.classList.remove('open');lbVid.pause();lbVid.src='';document.body.style.overflow=''}
+function renderLb(){const src=lbItems[lbIdx];const isVid=src&&(src.endsWith('.mp4')||src.endsWith('.webm'));lbImg.style.display=isVid?'none':'block';lbVid.style.display=isVid?'block':'none';if(isVid){lbVid.src=src;lbVid.play()}else{lbImg.src=src||''}lbCounter.textContent=(lbIdx+1)+' / '+lbItems.length;}
+function lbNav(dir){if(!lbItems.length)return;lbIdx=(lbIdx+dir+lbItems.length)%lbItems.length;renderLb()}
+document.getElementById('lb-close').addEventListener('click',closeLightbox);
+document.getElementById('lb-prev').addEventListener('click',()=>lbNav(-1));
+document.getElementById('lb-next').addEventListener('click',()=>lbNav(1));
+lb.addEventListener('click',e=>{if(e.target===lb)closeLightbox()});
+document.querySelectorAll('.gal-item').forEach((item,i,arr)=>{
+  item.addEventListener('click',()=>{
+    const srcs=[...arr].map(a=>a.dataset.media);
+    openLightbox(srcs,i);
+  });
+});
+
+/* Reveal on scroll */
+const obs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('visible');obs.unobserve(x.target)}}),{threshold:.07});
+document.querySelectorAll('.reveal').forEach(r=>obs.observe(r));
+</script>
+</body>
+</html>
